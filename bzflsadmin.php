@@ -1,4 +1,5 @@
 <?php
+
 // bzlogin.php
 //
 // Copyright (c) 1993 - 2004 Tim Riker
@@ -14,8 +15,20 @@
 define('IN_PHPBB', true);
 $phpbb_root_path = '../../forums.bzflag.org/htdocs/';
 $phpEx = 'php';
-
+require($phpbb_root_path . 'includes/startup.' . $phpEx);
+require($phpbb_root_path . 'phpbb/class_loader.' . $phpEx);
+$phpbb_class_loader = new \phpbb\class_loader('phpbb\\', "{$phpbb_root_path}phpbb/", $phpEx);
+$phpbb_class_loader->register();
+$phpbb_config_php_file = new \phpbb\config_php_file($phpbb_root_path, $phpEx);
+extract($phpbb_config_php_file->get_all());
+@define('PHPBB_ENVIRONMENT', 'production');
+$phpbb_container_builder = new \phpbb\di\container_builder($phpbb_root_path, $phpEx);
+$phpbb_container = $phpbb_container_builder->with_config($phpbb_config_php_file)->get_container();
+$phpbb_container->get('request')->enable_super_globals();
 include($phpbb_root_path.'includes/functions.'.$phpEx);
+include($phpbb_root_path.'includes/functions_compatibility.'.$phpEx);
+include($phpbb_root_path.'includes/utf/utf_tools.'.$phpEx);
+
 
 // where to send debug printing (might override below)
 $enableDebug= 0;
@@ -29,27 +42,27 @@ include ('/etc/bzflag/serversettings.php');
 session_start();
 
 // connect to MySQL
-$link = @mysql_connect ($dbhost, $dbuname, $dbpass) or die ("Could not connect to MySQL.");
+$link = @mysqli_connect ($dbhost, $dbuname, $dbpass) or die ("Could not connect to MySQL.");
 
-@mysql_query("SET NAMES 'utf8'", $link);
+@mysqli_query($link, "SET NAMES 'utf8'");
 
 // main action logic switch
 switch ($_REQUEST['action']) {
 case 'LOGIN':
-	mysql_select_db ($bbdbname) or die ("Could not select user database.");
+	mysqli_select_db ($link, $bbdbname) or die ("Could not select user database.");
 	$sql = sprintf ('SELECT user_id, user_password FROM bzbb3_users WHERE username = "%s"',
-			mysql_real_escape_string ($_POST['username']));
-	$result = mysql_query ($sql);
+			mysqli_real_escape_string ($link, $_POST['username']));
+	$result = mysqli_query ($link, $sql);
 
 	// check for valid result and valid login
 	if (! $result) {
 		dumpPageHeader();
-		echo 'Sorry, unknown error: <div style="display: inline; color: grey">'.mysql_error().'</div>';
+		echo 'Sorry, unknown error: <div style="display: inline; color: grey">'.mysqli_error().'</div>';
 		dumpPageFooter();
 
 		break;
 	}
-	if (mysql_num_rows ($result) < 1) {
+	if (mysqli_num_rows ($result) < 1) {
 		dumpPageHeader();
 		echo 'Sorry, could not log you in with the specified credentials.';
 		dumpPageFooter();
@@ -57,7 +70,7 @@ case 'LOGIN':
 		break;
 	}
 
-	$row = mysql_fetch_assoc($result);
+	$row = mysqli_fetch_assoc($result);
 
 	if (!phpbb_check_hash($_POST['password'], $row['user_password'])) {
 		dumpPageHeader();
@@ -72,15 +85,15 @@ case 'LOGIN':
 	// check that this user is a list server admin
 	$sql = 'SELECT group_id FROM bzbb3_user_group WHERE user_id = '.$_SESSION['bzid'].' AND group_id = '.
 			'(SELECT group_id FROM bzbb3_groups WHERE group_name = "BZFLS.ADMIN")';
-	$result = mysql_query ($sql);
+	$result = mysqli_query ($link, $sql);
 	if (! $result) {
 		dumpPageHeader();
-		echo 'Sorry, unknown error: <div style="display: inline; color: grey">'.mysql_error().'</div>';
+		echo 'Sorry, unknown error: <div style="display: inline; color: grey">'.mysqli_error().'</div>';
 		dumpPageFooter();
 
 		break;
 	}
-	if (mysql_num_rows ($result) < 1) {
+	if (mysqli_num_rows ($result) < 1) {
 		unset ($_SESSION['bzid']);
 		dumpPageHeader();
 		echo 'Sorry, you are not allowed to administer the list server.';
@@ -116,13 +129,13 @@ case 'DEACTIVATE':
 	}
 
 	// make the update
-	mysql_select_db ($dbname) or die ("Could not select bzfls database.");
+	mysqli_select_db ($link, $dbname) or die ("Could not select bzfls database.");
 	$sql = sprintf ('UPDATE serverbans SET active = %u WHERE banid = %u',
 			($_REQUEST['action'] == ACTIVATE ? 1 : 0), $_POST['id']);
-	$result = mysql_query ($sql);
+	$result = mysqli_query ($link, $sql);
 	if (! $result) {
 		dumpPageHeader();
-		echo 'Sorry, unknown error: <div style="display: inline; color: grey">'.mysql_error().'</div>';
+		echo 'Sorry, unknown error: <div style="display: inline; color: grey">'.mysqli_error().'</div>';
 		dumpPageFooter();
 
 		break;
@@ -142,12 +155,12 @@ case 'EDIT':
 
 	// get the original data if it exists
 	$data = array();
-	mysql_select_db ($dbname) or die ("Could not select bzfls database.");
+	mysqli_select_db ($link, $dbname) or die ("Could not select bzfls database.");
 	$sql = sprintf ('SELECT * FROM serverbans WHERE banid = %u', $_POST['id']);
-	$result = mysql_query ($sql);
+	$result = mysqli_query ($link, $sql);
 
-	if ($result && mysql_num_rows ($result) > 0)
-		$data = mysql_fetch_array ($result);
+	if ($result && mysqli_num_rows ($result) > 0)
+		$data = mysqli_fetch_array ($result);
 
 	dumpPageHeader();
 	?>
@@ -185,26 +198,26 @@ case 'UPDATE':
 	}
 
 	// run update query
-	mysql_select_db ($dbname) or die ("Could not select bzbb database.");
+	mysqli_select_db ($link, $dbname) or die ("Could not select bzbb database.");
 	if ($_POST['id'])
 		$sql = sprintf ("UPDATE serverbans SET type = '%s', value = '%s', owner = '%s', reason = '%s', lastby = %u WHERE banid = %u",
-        mysql_real_escape_string ($_POST['type']),
-				mysql_real_escape_string ($_POST['value']),
-				mysql_real_escape_string ($_POST['owner']),
-				mysql_real_escape_string ($_POST['reason']),
+        mysqli_real_escape_string ($link, $_POST['type']),
+				mysqli_real_escape_string ($link, $_POST['value']),
+				mysqli_real_escape_string ($link, $_POST['owner']),
+				mysqli_real_escape_string ($link, $_POST['reason']),
 				$_SESSION['bzid'],
 				$_POST['id']);
 	else
 		$sql = sprintf ("INSERT INTO serverbans SET type = '%s', value = '%s', owner = '%s', reason = '%s', lastby = %u",
-		    mysql_real_escape_string ($_POST['type']),
-				mysql_real_escape_string ($_POST['value']),
-				mysql_real_escape_string ($_POST['owner']),
-				mysql_real_escape_string ($_POST['reason']),
+		    mysqli_real_escape_string ($link, $_POST['type']),
+				mysqli_real_escape_string ($link, $_POST['value']),
+				mysqli_real_escape_string ($link, $_POST['owner']),
+				mysqli_real_escape_string ($link, $_POST['reason']),
 				$_SESSION['bzid']);
-	$result = mysql_query ($sql);
+	$result = mysqli_query ($link, $sql);
 	if (! $result) {
 		dumpPageHeader();
-		echo 'Sorry, unknown error: <div style="display: inline; color: grey">'.mysql_error().'</div>';
+		echo 'Sorry, unknown error: <div style="display: inline; color: grey">'.mysqli_error().'</div>';
 		dumpPageFooter();
 
 		break;
@@ -229,13 +242,13 @@ case 'DELETE':
 	}
 
 	// run deletion query
-	mysql_select_db ($dbname) or die ("Could not select bzbb database.");
+	mysqli_select_db ($link, $dbname) or die ("Could not select bzbb database.");
 	$sql = sprintf ('DELETE FROM serverbans WHERE banid = %u', $_POST['id']);
-	$result = mysql_query ($sql);
+	$result = mysqli_query ($link, $sql);
 
 	if (! $result) {
 		dumpPageHeader();
-		echo 'Sorry, unknown error: <div style="display: inline; color: grey">'.mysql_error().'</div>';
+		echo 'Sorry, unknown error: <div style="display: inline; color: grey">'.mysqli_error().'</div>';
 		dumpPageFooter();
 
 		break;
@@ -278,26 +291,26 @@ This page is the admin interface for the BZFlag list server located at my.bzflag
 	}
 
 	// user is logged in... print main admin page, starting with welcome
-	mysql_select_db ($bbdbname) or die ("Could not select user database.");
+	mysqli_select_db ($link, $bbdbname) or die ("Could not select user database.");
 	$sql = 'SELECT username FROM bzbb3_users WHERE user_id = '.$_SESSION['bzid'];
-	$result = mysql_query ($sql);
+	$result = mysqli_query ($link, $sql);
 
 	if (! $result) {
-		echo 'Sorry, unknown error: <div style="display: inline; color: grey">'.mysql_error().'</div>';
+		echo 'Sorry, unknown error: <div style="display: inline; color: grey">'.mysqli_error().'</div>';
 		dumpPageFooter();
 
 		return;
-	} else if (mysql_num_rows ($result) > 0) {
-		echo '<i>Wassup, '.mysql_result ($result, 0, "username").'?</i>&nbsp;'.
+	} else if (mysqli_num_rows ($result) > 0) {
+		echo '<i>Wassup, '.mysqli_fetch_array ($result)[0].'?</i>&nbsp;'.
 				'<a href="'.$_SERVER['PHP_SELF'].'?action=LOGOUT">(Log Out)</a><br><br>'."\n\n";
 	}
 
 	// current bans list
-	mysql_select_db ($dbname) or die ("Could not select bzfls database.");
+	mysqli_select_db ($link, $dbname) or die ("Could not select bzfls database.");
 	$sql = 'SELECT * FROM serverbans WHERE 1';
-	$result = mysql_query ($sql);
+	$result = mysqli_query ($link, $sql);
 	if (! $result) {
-		echo 'Sorry, unknown error: <div style="display: inline; color: grey">'.mysql_error().'</div>';
+		echo 'Sorry, unknown error: <div style="display: inline; color: grey">'.mysqli_error().'</div>';
 		dumpPageFooter();
 
 		return;
@@ -305,7 +318,7 @@ This page is the admin interface for the BZFlag list server located at my.bzflag
 
 	echo "<b>Bans</b><br>\n";
 
-	if (mysql_num_rows ($result) > 0) {
+	if (mysqli_num_rows ($result) > 0) {
 		?>
 <table cellpadding="5px" class="listform" border=1>
 	<tr class="dark">
@@ -320,7 +333,7 @@ This page is the admin interface for the BZFlag list server located at my.bzflag
 <?php
 		// compile array of current bans
 		$bans = array();
-		while ($result_array = mysql_fetch_array ($result))
+		while ($result_array = mysqli_fetch_array ($result))
 			array_push ($bans, array(
 			'id' => $result_array['banid'],
 			'active' => $result_array['active'],
@@ -329,14 +342,14 @@ This page is the admin interface for the BZFlag list server located at my.bzflag
 			'owner' => $result_array['owner'],
 			'reason' => $result_array['reason'],
 			'lastby' => $result_array['lastby']));
- 
+
 		// convert each 'lastby' bzid to a username
-		mysql_select_db ($bbdbname) or die ("Could not select user database.");
+		mysqli_select_db ($link, $bbdbname) or die ("Could not select user database.");
 		for ($i = 0; $i < count ($bans); ++$i) {
 			$sql = 'SELECT username FROM bzbb3_users WHERE user_id = '.$bans[$i]['lastby'];
-			$result = mysql_query ($sql);
-			if ($result && mysql_num_rows ($result) > 0)
-				$bans[$i]['lastby'] = mysql_result ($result, 0, "username");
+			$result = mysqli_query ($link, $sql);
+			if ($result && mysqli_num_rows ($result) > 0)
+				$bans[$i]['lastby'] = mysqli_fetch_array ($result)[0];
 		}
 
 		// output the row

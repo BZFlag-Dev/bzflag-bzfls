@@ -10,18 +10,18 @@
       // Only do the check if we have this type of value
       if (!isset($values[$ban['type']]))
         continue;
-      
+
       // If we don't have an array for a value, toss it into one
       if (!is_array($values[$ban['type']]))
         $values[$ban['type']] = Array($values[$ban['type']]);
       // If we have an array, make sure we have items or just go to the next ban
       else if (sizeof($values[$ban['type']]) == 0)
         continue;
-        
+
       foreach ($values[$ban['type']] as $value) {
-        
+
         //echo "Checking $value against the ban {$ban['value']}\n";
-        
+
         // IP Address
         // Supports exact matches, wildcards, and CIDR notation
         // Ex: 192.168.0.1
@@ -34,26 +34,26 @@
           if (strpos($ban['value'], '/') !== false) {
             // Split apart the IP and CIDR
             list($ip, $cidr) = explode('/', $ban['value']);
-            
+
             // Do a binary match based on the CIDR value
             if (strncmp(sprintf("%032b", ip2long($ip)), sprintf("%032b", ip2long($value)), $cidr) == 0)
-              return $ban; 
+              return $ban;
           }
           // Check if the ban has a wildcard
           else if (strpos($ban['value'], '*') !== false) {
             // Split the values into octets
             $banparts = explode('.', $ban['value']);
             $parts = explode('.', $value);
-            
+
             // We need four parts for each
             if (sizeof($parts) != 4 || sizeof($banparts) != 4)
               continue;
-            
+
             // Check to see if all of the parts match
             for ($i = 0; $i < 4; $i++)
               if ($banparts[$i] != '*' && $banparts[$i] != $parts[$i])
                 break;
-            
+
             // If $i is set to 4, that means that the for loop above completed.
             // If so, that means that all four octets matched up.
             if ($i == 4)
@@ -65,7 +65,7 @@
               return $ban;
           }
         }
-        
+
         // Hostname
         // Supports exact matches and wildcards
         // Ex: example.org
@@ -75,7 +75,7 @@
           // Check if the ban has a wildcard
           if (strpos($ban['value'], '*') !== false) {
             // We have a wildcard, compare with a regex
-            if (eregi(str_replace(Array('.', '*'), Array('\.', '(.*)'), $ban['value']), $value))
+            if (preg_match('/'.str_replace(Array('.', '*'), Array('\.', '(.*)'), $ban['value']).'/i', $value))
               return $ban;
           }
           else {
@@ -84,7 +84,7 @@
               return $ban;
           }
         }
-        
+
         // BZID
         // Only supports exact matches
         else if ($ban['type'] == 'bzid') {
@@ -92,14 +92,12 @@
           if ($value == $ban['value'])
             return $ban;
         }
-        
+
       } // foreach ($values as $value)
-      
+
     } // foreach($bans as $ban)
-    
+
     // No ban matched
     return false;
-    
-  } // function CheckBan($values, $bans)
 
-?>
+  } // function CheckBan($values, $bans)
