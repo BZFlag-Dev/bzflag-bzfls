@@ -286,12 +286,16 @@ function json_quote($str)
 
 function print_plain_list(&$listing)
 {
+  header('Content-Type:text/plain;charset=utf-8');
   if (isset($listing['token'])) {
     if ($listing['token']) {
       print("TOKEN: " . $listing['token'] . "\n");
     } else {
       print("NOTOK: invalid callsign or password\n");
     }
+  }
+  if (isset($listing['notice'])) {
+    print("NOTICE: " . $listing['notice'] . "\n");
   }
   if (!isset($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] != 'https')
     echo "outdated.bzflag.org BZFS0221 00000010000100000000000000000000c8c8c800c800c800c800c800c8 127.0.0.1 You are using a very old client. Upgrade to BZFlag 2.4.4 or later.\n";
@@ -303,6 +307,7 @@ function print_plain_list(&$listing)
 
 function print_lua_list(&$listing)
 {
+  header('Content-Type:text/x-lua;charset=utf-8');
   print "return {\n";
   if (isset($listing['token'])) {
     print "token = " . lua_quote($listing['token']) . ",\n";
@@ -327,9 +332,15 @@ function print_lua_list(&$listing)
 
 function print_json_list(&$listing)
 {
+  header('Content-Type: application/json; charset = utf-8');
+  echo json_encode($listing,JSON_PRETTY_PRINT);
+  return;
   print "{\n";
   if (isset($listing['token'])) {
     print "token: " . json_quote($listing['token']) . ",\n";
+  }
+  if (isset($listing['notice'])) {
+    print "notice: " . json_quote($listing['notice']) . ",\n";
   }
   print '"fields": ["version","hexcode","addr","ipaddr","title","owner"],' . "\n";
   //print '"fields": ["version","hexcode","addr","ipaddr","title","owner","ownername"],' . "\n";
@@ -385,7 +396,6 @@ function action_list() {
   # Same as LIST in the old bzfls
   global $db, $callsign, $password, $version;
   global $listformat;
-  header('Content-type: text/plain');
   debug ("  :::::  ", 2);
 
   $listing = Array();
@@ -414,7 +424,7 @@ function action_list() {
       // Check for private messages and send a notice if there is one
       $pms = $db->getPrivateMessageCountByUserID($player['user_id']);
       if ($pms) {
-        print("NOTICE: You have $pms private messages waiting for you, $callsign.  Log in at https://forums.bzflag.org/ to read them.\n");
+        $listing['notice'] = "You have $pms private messages waiting for you, $callsign.  Log in at https://forums.bzflag.org/ to read them.";
       }
     }
   }
