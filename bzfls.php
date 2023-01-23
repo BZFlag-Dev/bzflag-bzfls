@@ -2,7 +2,7 @@
 
 // bzfls.php
 //
-// Copyright (c) 1993 - 2004 Tim Riker
+// Copyright (c) 1993-2023 Tim Riker
 //
 // This package is free software;  you can redistribute it and/or
 // modify it under the terms of the license found in the file
@@ -66,7 +66,7 @@ function allDone (){
 
       fwrite($fdDebug, date('D M j G:i:s T Y') . ' ' . str_pad($_SERVER['REMOTE_ADDR'],15) . $request_info
           . ' ' . str_replace ("\n", "\n  ", $debugMessage));
-      if ($debugMessage{strlen($debugMessage)-1} != "\n")
+      if ($debugMessage[strlen($debugMessage)-1] != "\n")
         fputs ($fdDebug, "\n");
       fclose($fdDebug);
     }
