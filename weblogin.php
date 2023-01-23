@@ -70,7 +70,7 @@ function dumpPageHeader () {
 function dumpPageFooter () {
 ?>
     </div>
-    <div id="footer">copyright &copy; <a href="//wiki.bzflag.org/Tim_Riker">Tim Riker</a> 1993-2010</div>
+    <div id="footer">copyright &copy; 1993-2023 <a href="//wiki.bzflag.org/Tim_Riker">Tim Riker</a></div>
   </div>
 </body>
 </html>
