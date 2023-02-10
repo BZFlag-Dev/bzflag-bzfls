@@ -569,10 +569,12 @@ function action_add() {
       return;
     }
 
+    # FIXME: this only looks one IPv4 address
+    # server may have zero or more IPv4 ips, and zero or more IPv6 ips.
     $ip = gethostbyname($keyinfo['host']);
     if ($ip != $_SERVER['REMOTE_ADDR']) {
-      echo "ERROR: Host mismatch for server authentication key\n";
-      return;
+      echo "WARNING: Host mismatch for server authentication key $ip != " . $_SERVER['REMOTE_ADDR'] . "\n";
+      #return;
     }
 
     // ok so the key is good, now to check the owner
