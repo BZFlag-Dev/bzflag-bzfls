@@ -12,6 +12,11 @@
 // IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
 // WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
+/* If started from the command line, wrap parameters to $_POST and $_GET */
+if (!isset($_SERVER["HTTP_HOST"])) {
+	parse_str($argv[1], $_REQUEST);
+}
+
 define('IN_PHPBB', true);
 $phpbb_root_path = '../../forums.bzflag.org/htdocs/';
 $phpEx = 'php';
@@ -82,15 +87,17 @@ function debug ($message, $level=1) {
 }
 
 function debugArray ($a){
-  $msg = '';
+  $arr = array();
   foreach ($a as $key => $val){
-    if (!strlen($msg))
-      $msg .= ', ';
     if (strncasecmp ($key, "PASS", 4)==0)
       $val = "**PASSWORD FILTERED**";
-    $msg .= "$key=$val ";
+    if (strpos($key, ' '))
+      $key="\"$key\"";
+    if (strpos($val, ' '))
+      $val="\"$val\"";
+    $arr[] = "$key=$val";
   }
-  return str_replace (array ("\r", "\n"), array ('<\r>', '<\n>'), $msg);
+  return str_replace (array ("\r", "\n"), array ('<\r>', '<\n>'), join(', ', $arr));
 }
 
 
@@ -297,7 +304,7 @@ function print_plain_list(&$listing)
   if (isset($listing['notice'])) {
     print("NOTICE: " . $listing['notice'] . "\n");
   }
-  if (!isset($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] != 'https')
+  if ($_SERVER['SERVER_PORT'] != '443' && (!isset($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] != 'https'))
     echo "outdated.bzflag.org BZFS0221 00000010000100000000000000000000c8c8c800c800c800c800c800c8 127.0.0.1 You are using a very old client. Upgrade to BZFlag 2.4.4 or later.\n";
   foreach ($listing['servers'] as $server) {
     print("{$server['nameport']} {$server['version']} {$server['gameinfo']} {$server['ipaddr']} {$server['title']}\n");
