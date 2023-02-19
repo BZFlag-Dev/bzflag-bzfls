@@ -152,7 +152,7 @@ class ListDB {
   }
 
   function getActiveForumUserByName($name) {
-    $statement = $this->link->prepare('SELECT user_id, user_password, username FROM bzbb3_users WHERE username_clean = ? AND user_inactive_reason = 0');
+    $statement = $this->link->prepare('SELECT user_id, user_password, username FROM bzflag_forum.bzbb3_users WHERE username_clean = ? AND user_inactive_reason = 0');
     if ($statement) {
       $statement->bind_param('s', $name);
       $statement->execute();
@@ -169,7 +169,7 @@ class ListDB {
   }
 
   function getActiveForumUserByUserID($userid) {
-    $statement = $this->link->prepare('SELECT username, username_clean, user_password FROM bzbb3_users WHERE user_id = ? AND user_inactive_reason = 0');
+    $statement = $this->link->prepare('SELECT username, username_clean, user_password FROM bzflag_forum.bzbb3_users WHERE user_id = ? AND user_inactive_reason = 0');
     if ($statement) {
       $statement->bind_param('i', $userid);
       $statement->execute();
@@ -186,7 +186,7 @@ class ListDB {
   }
 
   function getActiveForumUsernameCleanByUserID($userid) {
-    $statement = $this->link->prepare('SELECT username_clean FROM bzbb3_users WHERE user_id = ? AND user_inactive_reason = 0');
+    $statement = $this->link->prepare('SELECT username_clean FROM bzflag_forum.bzbb3_users WHERE user_id = ? AND user_inactive_reason = 0');
     if ($statement) {
       $statement->bind_param('i', $userid);
       $statement->execute();
@@ -203,7 +203,7 @@ class ListDB {
   }
 
   function getGroupMembershipsByUserID($userid) {
-    $statement = $this->link->prepare("SELECT g.group_name FROM bzbb3_groups g, bzbb3_user_group ug WHERE ug.user_id = ? AND ug.group_id = g.group_id AND ug.user_pending = 0 AND NOT (g.group_skip_auth = 1 AND ug.group_leader = 1)");
+    $statement = $this->link->prepare("SELECT g.group_name FROM bzflag_forum.bzbb3_groups g, bzflag_forum.bzbb3_user_group ug WHERE ug.user_id = ? AND ug.group_id = g.group_id AND ug.user_pending = 0 AND NOT (g.group_skip_auth = 1 AND ug.group_leader = 1)");
     if ($statement) {
       $statement->bind_param('i', $userid);
       $statement->execute();
@@ -221,10 +221,10 @@ class ListDB {
     return Array();
   }
 
-  function validateTokenInformation($callsign, $token, $ip, $staletime, $nameport) {
-    $statement = $this->link->prepare("SELECT user_id FROM bzbb3_users WHERE username_clean = ? AND user_token = ? AND user_tokendate > ? AND ((user_tokenip = ? OR '' = ?) OR (user_tokennameport = ? OR '' = ?))");
+  function validateTokenInformation($callsign, $token, $ip, $staletime) {
+    $statement = $this->link->prepare("SELECT user_id FROM bzflag_forum.bzbb3_users WHERE username_clean = ? AND user_token = ? AND user_tokendate > ? AND (user_tokenip = ? or '' = ?)");
     if ($statement) {
-      $statement->bind_param('siissss', $callsign, $token, $staletime, $ip, $ip, $nameport, $nameport);
+      $statement->bind_param('siiss', $callsign, $token, $staletime, $ip, $ip);
       $statement->execute();
       $result = $statement->get_result();
       if ($result) {
@@ -237,17 +237,17 @@ class ListDB {
     return false;
   }
 
-  function setTokenInformationByUserID($userid, $token, $nameport) {
-    $statement = $this->link->prepare('UPDATE bzbb3_users SET user_token = ?, user_tokendate = ?, user_tokenip = ?, user_tokennameport = ? WHERE user_id = ?');
+  function setTokenInformationByUserID($userid, $token) {
+    $statement = $this->link->prepare('UPDATE bzflag_forum.bzbb3_users SET user_token = ?, user_tokendate = ?, user_tokenip = ? WHERE user_id = ?');
     if ($statement) {
       $time = time();
-      $statement->bind_param('iissi', $token, $time, $_SERVER['REMOTE_ADDR'], $nameport, $userid);
+      $statement->bind_param('iisi', $token, $time, $_SERVER['REMOTE_ADDR'], $userid);
       $statement->execute();
     }
   }
 
   function clearTokenInformationByUserID($userid) {
-    $statement = $this->link->prepare('UPDATE bzbb3_users SET user_lastvisit = ?, user_tokendate = 0 WHERE user_id = ?');
+    $statement = $this->link->prepare('UPDATE bzflag_forum.bzbb3_users SET user_lastvisit = ?, user_tokendate = 0 WHERE user_id = ?');
     if ($statement) {
       $time = time();
       $statement->bind_param('ii', $time, $userid);
@@ -256,7 +256,7 @@ class ListDB {
   }
 
   function getPrivateMessageCountByUserID($userid) {
-    $statement = $this->link->prepare('SELECT user_new_privmsg FROM bzbb3_users WHERE user_id = ?');
+    $statement = $this->link->prepare('SELECT user_new_privmsg FROM bzflag_forum.bzbb3_users WHERE user_id = ?');
     if ($statement) {
       $statement->bind_param('i', $userid);
       $statement->execute();
@@ -290,7 +290,7 @@ class ListDB {
 
   function getServersForUserID($user, $version) {
     if (!$version) $version = '';
-    $statement = $this->link->prepare("SELECT s.nameport, s.version, s.gameinfo, s.ipaddr, s.title, s.owner, s.ownername FROM servers s INNER JOIN server_advert_groups ad ON s.server_id = ad.server_id INNER JOIN bzbb3_user_group ug ON ad.group_id = ug.group_id WHERE ug.user_id = ? AND (s.version = ? OR '' = ?) UNION SELECT s.nameport, s.version, s.gameinfo, s.ipaddr, s.title, s.owner, s.ownername FROM servers s INNER JOIN server_advert_groups ad ON s.server_id = ad.server_id WHERE (ad.group_id = 0 OR ad.group_id = 6727) AND (s.version = ? OR '' = ?) ORDER BY nameport ASC");
+    $statement = $this->link->prepare("SELECT s.nameport, s.version, s.gameinfo, s.ipaddr, s.title, s.owner, s.ownername FROM servers s INNER JOIN server_advert_groups ad ON s.server_id = ad.server_id INNER JOIN bzflag_forum.bzbb3_user_group ug ON ad.group_id = ug.group_id WHERE ug.user_id = ? AND (s.version = ? OR '' = ?) UNION SELECT s.nameport, s.version, s.gameinfo, s.ipaddr, s.title, s.owner, s.ownername FROM servers s INNER JOIN server_advert_groups ad ON s.server_id = ad.server_id WHERE (ad.group_id = 0 OR ad.group_id = 6727) AND (s.version = ? OR '' = ?) ORDER BY nameport ASC");
     if ($statement) {
       $statement->bind_param('issss', $user, $version, $version, $version, $version);
       $statement->execute();
@@ -307,7 +307,7 @@ class ListDB {
 
 
   function getGroupIDByGroupName($groupname) {
-    $statement = $this->link->prepare('SELECT group_id FROM bzbb3_groups WHERE group_name = ?');
+    $statement = $this->link->prepare('SELECT group_id FROM bzflag_forum.bzbb3_groups WHERE group_name = ?');
     if ($statement) {
       $statement->bind_param('s', $groupname);
       $statement->execute();
