@@ -373,7 +373,7 @@ function print_json_list(&$listing)
 }
 
 function authenticate_player($callsign, $password) {
-  global $db;
+  global $db, $nameport;
   // Clean up UTF-8 characters
   $clean_callsign = utf8_clean_string($callsign);
 
@@ -388,7 +388,7 @@ function authenticate_player($callsign, $password) {
     //$player['token'] = bin2hex(random_bytes(16));
     //$player['token'] = base64_encode(random_bytes(14));
     debug ("OK   token={$player['token']}", 2);
-    $db->setTokenInformationByUserID($player['user_id'], $player['token']);
+    $db->setTokenInformationByUserID($player['user_id'], $player['token'], $nameport);
     return $player;
   }
   else {
@@ -469,9 +469,9 @@ function action_gettoken () {
 
 function checktoken($callsign, $ip, $token, $garray) {
   # validate player token for connecting player on a game server
-  global $db;
+  global $db, $nameport;
   # TODO add grouplist support
-  print("MSG: checktoken callsign=$callsign, ip=$ip, token=$token ");
+  print("MSG: checktoken callsign=$callsign, token=$token, nameport=$nameport, ip=$ip, ");
   foreach($garray as $group) {
     print(" group=$group");
   }
@@ -487,7 +487,7 @@ function checktoken($callsign, $ip, $token, $garray) {
     return;
   }
 
-  $playerid = $db->validateTokenInformation($clean_callsign, $token, $ip, $staletime);
+  $playerid = $db->validateTokenInformation($clean_callsign, $token, $ip, $staletime, $nameport);
   if ($playerid) {
     # clear tokendate so nasty game server admins can't login someplace else
     $db->clearTokenInformationByUserID($playerid);
@@ -601,7 +601,7 @@ function action_add() {
   $serverips = gethostbynamel($servname);
   // Hostname must resolve to a single IPv4 address
   if ($serverips === FALSE || sizeof($serverips) != 1) {
-    print("ERROR: Provided hostname does not resolve to a single IPv4 address\n");
+    print("ERROR: Provided hostname does not resolve to a single IPv4 address:".json_encode($serverips)."\n");
     return;
   }
 
@@ -668,7 +668,7 @@ function action_remove() {
   $serverips = gethostbynamel($servname);
   // Hostname must resolve to a single IPv4 address
   if ($serverips === FALSE || sizeof($serverips) != 1) {
-    print("ERROR: Provided hostname does not resolve to a single IPv4 address\n");
+    print("ERROR: Provided hostname does not resolve to a single IPv4 address:".json_encode($serverips)."\n");
     return;
   }
 
@@ -703,7 +703,7 @@ if ($values['hostname'][0] == $values['ipaddress'][0])
 # TODO: Add a check for the $nameport variable here and add that to $values
 
 # ignore banned servers outright
-if ($ban = IsBanned($values, $banlist, $isSilent)) {
+if ($ban = IsBanned($values, $banlist)) {
   # reject the connection attempt
   header('Content-type: text/plain');
   $remote_addr = $_SERVER['REMOTE_ADDR'];
