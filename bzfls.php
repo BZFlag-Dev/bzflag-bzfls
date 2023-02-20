@@ -569,6 +569,12 @@ function action_add() {
       return;
     }
 
+    $servname = substr($nameport, 0, strrpos($nameport,':'));
+    if ($servname != $keyinfo['host']) {
+      echo "ERROR: Server name mismatch for key $servname != " . $keyinfo['host'] . "\n";
+      return;
+    }
+
     # FIXME: this only looks one IPv4 address
     # server may have zero or more IPv4 ips, and zero or more IPv6 ips.
     $ip = gethostbyname($keyinfo['host']);
@@ -607,7 +613,7 @@ function action_add() {
 
   $servip = $serverips[0];
 
-  if ($_SERVER['REMOTE_ADDR'] !== $servip && !$debugNoIpCheck) {
+  if ($ownerID == "" && $_SERVER['REMOTE_ADDR'] !== $servip && !$debugNoIpCheck) {
     debug('Requesting address is ' . $_SERVER['REMOTE_ADDR']
         . ' while server is at ' . $servip, 1 );
     print('ERROR: Requesting address is ' . $_SERVER['REMOTE_ADDR']
@@ -653,17 +659,43 @@ function action_add() {
 function action_remove() {
   #  -- REMOVE --
   # Server requests to be removed from the DB.
-  global $db, $nameport, $debugNoIpCheck;
+  global $db, $nameport, $serverKey, $debugNoIpCheck;
   header('Content-type: text/plain');
   print("MSG: REMOVE request from $nameport\n");
   debug("REMOVE request from $nameport", 1);
 
+  $owner = "";
+  $ownerID = "";
+
+  # FIXME: won't work with IPv6
   $split = explode(':', $nameport);
   $servname = $split[0];
   if (array_key_exists(1, $split))
     $servport = $split[1];
   else
     $servport = 5154;
+
+  if ($serverKey)
+  {
+    $keyinfo = $db->getAuthKeyInfoByKey($serverKey);
+    if (!$keyinfo) {
+      print("ERROR: Missing or invalid server authentication key\n");
+      return;
+    }
+
+    if ($servname != $keyinfo['host']) {
+      echo "ERROR: Server name mismatch for key $servname != " . $keyinfo['host'] . "\n";
+      return;
+    }
+
+    // ok so the key is good, now to check the owner
+    $owner = $db->getActiveForumUsernameCleanByUserID($keyinfo['owner']);
+    if (!$owner) {
+      print("ERROR: Owner lookup failure\n");
+      return;
+    }
+    $ownerID = $keyinfo['owner'];
+  }
 
   $serverips = gethostbynamel($servname);
   // Hostname must resolve to a single IPv4 address
@@ -674,7 +706,7 @@ function action_remove() {
 
   $servip = $serverips[0];
 
-  if ($_SERVER['REMOTE_ADDR'] !== $servip && !$debugNoIpCheck) {
+  if ($ownerID == "" && $_SERVER['REMOTE_ADDR'] !== $servip && !$debugNoIpCheck) {
     debug('Requesting address is ' . $_SERVER['REMOTE_ADDR']
         . ' while server is at ' . $servip, 1 );
     print('ERROR: Requesting address is ' . $_SERVER['REMOTE_ADDR']
