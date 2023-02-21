@@ -254,10 +254,11 @@ function testform($message) {
     version:<input type="text" name="version" size="80"><br>
     callsign:<input type="text" name="callsign" size="80"><br>
     password:<input type="password" name="password" size="80"><br>
-    actions: REMOVE<br>
+    actions: LIST ADD REMOVE<br>
     nameport:<input type="text" name="nameport" size="80"><br>
-    key:<input type="text" name="key" size="80"><br>
     actions: ADD REMOVE<br>
+    key:<input type="text" name="key" size="80"><br>
+    actions: ADD<br>
     build:<input type="text" name="build" size="80"><br>
     gameinfo:<input type="text" name="gameinfo" size="80"><br>
     title:<input type="text" name="title" size="80"><br>
@@ -756,8 +757,6 @@ switch ($action) {
   case 'GETTOKEN': { action_gettoken();   break; }
   case 'ADD':      { action_add();        break; }
   case 'REMOVE':   { action_remove();     break; }
-  case 'REGISTER': { action_register();   break; }
-  case 'CONFIRM':  { action_confirm();    break; }
   case 'CHECKTOKENS': {
     header('Content-type: text/plain');
     action_checktokens();
