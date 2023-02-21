@@ -270,8 +270,6 @@ CallSign1=89abcdef</textarea>
     groups:<textarea name="groups" rows="3" style="width:100%">
 Group0
 Group1</textarea>
-    actions: REGISTER CONFIRM<br>
-    email:<input type="text" name="email" size="80"><br>
     <input type="submit" value="Post entry">
     <input type="reset" value="Clear form">
   </form>
