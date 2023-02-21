@@ -235,7 +235,7 @@ function testform($message) {
 <body>
   <h1>BZFlag db server</h1>
   ' . $message . '
-  <p>This is the development interface to the <a href="http://BZFlag.org/">BZFlag</a> list server AT BZ.</p>
+  <p>This is the development interface to the <a href="http://BZFlag.org/">BZFlag</a> list server.</p>
   <form action="" method="POST">
     action:<select name="action">
     <option value="LIST" selected>LIST - list servers</option>
@@ -256,6 +256,7 @@ function testform($message) {
     password:<input type="password" name="password" size="80"><br>
     actions: REMOVE<br>
     nameport:<input type="text" name="nameport" size="80"><br>
+    key:<input type="text" name="key" size="80"><br>
     actions: ADD REMOVE<br>
     build:<input type="text" name="build" size="80"><br>
     gameinfo:<input type="text" name="gameinfo" size="80"><br>
@@ -276,8 +277,6 @@ Group1</textarea>
 </body>
 </html>');
 }
-
-
 
 function lua_quote($str)
 {
