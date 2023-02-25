@@ -117,7 +117,11 @@ function action_weblogin() {
 
     if ($player && md5($parsedURL['host']).$player['user_password'] === $_COOKIE[$wlk]) {
       $token = random_int(0, 2147483647);
-      $db->setTokenInformationByUserID($uid, $token);
+      $nameport = $parsedURL['host'];
+      if (!empty($parsedURL['port']) {
+        $nameport .= ':'.$parsedURL['port'];
+      }
+      $db->setTokenInformationByUserID($uid, $token, $nameport);
       if (true) {
         header('location: ' . str_replace(Array('%TOKEN%', '%USERNAME%'), Array(urlencode($token), urlencode($player['username'])), $URL));
         return;
@@ -223,7 +227,11 @@ function action_webvalidate() {
       }*/
 
       $token = random_int(0, 2147483647);
-      $db->setTokenInformationByUserID($player['user_id'], $token);
+      $nameport = $refererParts['host'];
+      if (!empty($refererParts['port'])) {
+        $nameport .= ':'.$refererParts['port'];
+      }
+      $db->setTokenInformationByUserID($player['user_id'], $token, $nameport);
       if (true) {
         header('location: ' . str_replace(Array('%TOKEN%', '%USERNAME%'), Array(urlencode($token), urlencode($player['username'])), $URL));
         return;
