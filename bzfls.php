@@ -341,35 +341,6 @@ function print_json_list(&$listing)
 {
   header('Content-Type: application/json; charset=utf-8');
   echo json_encode($listing,JSON_PRETTY_PRINT);
-  return;
-  print "{\n";
-  if (isset($listing['token'])) {
-    print "token: " . json_quote($listing['token']) . ",\n";
-  }
-  if (isset($listing['notice'])) {
-    print "notice: " . json_quote($listing['notice']) . ",\n";
-  }
-  print '"fields": ["version","hexcode","addr","ipaddr","title","owner"],' . "\n";
-  //print '"fields": ["version","hexcode","addr","ipaddr","title","owner","ownername"],' . "\n";
-  print '"servers": [';
-  $first = true;
-  foreach ($listing['servers'] as $server) {
-    if ($first) {
-      $first = false;
-    } else {
-      print ",";
-    }
-    print "\n["
-    . json_quote($server['version']) . ","  // version
-    . json_quote($server['gameinfo']) . ","  // hexcode
-    . json_quote($server['nameport']) . ","  // addr
-    . json_quote($server['ipaddr']) . ","  // ipaddr
-    . json_quote($server['title']) . ","  // title
-    //. json_quote($server['owner']) . "," // owner
-    . json_quote($server['ownername']) . "]"; // ownername
-  }
-  print "\n]\n";
-  print "}\n";
 }
 
 function authenticate_player($callsign, $password) {
