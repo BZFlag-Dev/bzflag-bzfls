@@ -13,7 +13,7 @@
 // WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 /* If started from the command line, wrap parameters to $_POST and $_GET */
-if (!isset($_SERVER["HTTP_HOST"])) {
+if (php_sapi_name() === 'cli') {
 	parse_str($argv[1], $_REQUEST);
 }
 
