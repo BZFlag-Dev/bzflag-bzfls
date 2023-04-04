@@ -150,7 +150,7 @@ function validate_string_or_error($string, $valid_chars) {
   if ($invalid_chars == true) {
     return($string);
   }
-  header('Content-type: text/html');
+  header('Content-Type: text/html');
   print("ERROR: Invalid chars in \"$string\": \"$invalid_chars\"");
   return('');
 }
@@ -227,7 +227,7 @@ $listformat = vcsoe(@$_REQUEST['listformat']);
 
 
 function testform($message) {
-  header('Content-type: text/html');
+  header('Content-Type: text/html');
   print('<html>
 <head>
 <title>BZFlag db server</title>
@@ -293,7 +293,7 @@ function json_quote($str)
 
 function print_plain_list(&$listing)
 {
-  header('Content-Type:text/plain;charset=utf-8');
+  header('Content-Type: text/plain; charset=utf-8');
   if (isset($listing['token'])) {
     if ($listing['token']) {
       print("TOKEN: " . $listing['token'] . "\n");
@@ -314,7 +314,7 @@ function print_plain_list(&$listing)
 
 function print_lua_list(&$listing)
 {
-  header('Content-Type:text/x-lua;charset=utf-8');
+  header('Content-Type: text/x-lua; charset=utf-8');
   print "return {\n";
   if (isset($listing['token'])) {
     print "token = " . lua_quote($listing['token']) . ",\n";
@@ -339,7 +339,7 @@ function print_lua_list(&$listing)
 
 function print_json_list(&$listing)
 {
-  header('Content-Type: application/json; charset = utf-8');
+  header('Content-Type: application/json; charset=utf-8');
   echo json_encode($listing,JSON_PRETTY_PRINT);
   return;
   print "{\n";
