@@ -304,7 +304,7 @@ function print_plain_list(&$listing)
   if (isset($listing['notice'])) {
     print("NOTICE: " . $listing['notice'] . "\n");
   }
-  if ($_SERVER['SERVER_PORT'] != '443' && (!isset($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] != 'https'))
+  if (empty($_SERVER['HTTPS']) && (!isset($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] != 'https'))
     echo "outdated.bzflag.org BZFS0221 00000010000100000000000000000000c8c8c800c800c800c800c800c8 127.0.0.1 You are using a very old client. Upgrade to BZFlag 2.4.4 or later.\n";
   foreach ($listing['servers'] as $server) {
     print("{$server['nameport']} {$server['version']} {$server['gameinfo']} {$server['ipaddr']} {$server['title']}\n");
@@ -718,3 +718,4 @@ debug('End session', 4);
 # indent-tabs-mode: t ***
 # End: ***
 # ex: shiftwidth=2 tabstop=8
+
