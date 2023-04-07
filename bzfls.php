@@ -13,8 +13,9 @@
 // WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 /* If started from the command line, wrap parameters to $_POST and $_GET */
+// example: SERVER_PORT=443 REMOTE_ADDR=127.0.0.1 php bzfls.php 'action=LISTi&version=BZFS0225'
 if (!isset($_SERVER["HTTP_HOST"])) {
-	parse_str($argv[1], $_REQUEST);
+  parse_str($argv[1], $_REQUEST);
 }
 
 define('IN_PHPBB', true);
@@ -291,6 +292,8 @@ function json_quote($str)
 
 function print_plain_list(&$listing)
 {
+  global $version;
+
   header('Content-Type:text/plain;charset=utf-8');
   if (isset($listing['token'])) {
     if ($listing['token']) {
@@ -303,32 +306,46 @@ function print_plain_list(&$listing)
     print("NOTICE: " . $listing['notice'] . "\n");
   }
   if ($_SERVER['SERVER_PORT'] != '443' && (!isset($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] != 'https'))
-    echo "outdated.bzflag.org BZFS0221 00000010000100000000000000000000c8c8c800c800c800c800c800c8 127.0.0.1 You are using a very old client. Upgrade to BZFlag 2.4.4 or later.\n";
+    print("outdated.bzflag.org BZFS0221 00000010000100000000000000000000c8c8c800c800c800c800c800c8 127.0.0.1 You are using a very old client. Upgrade to BZFlag 2.4.4 or later.\n");
   foreach ($listing['servers'] as $server) {
-    print("{$server['nameport']} {$server['version']} {$server['gameinfo']} {$server['ipaddr']} {$server['title']}\n");
+    if ($version >= 'BZFS0225')
+      print("{$server['nameport']} {$server['version']} {$server['gameinfo']} {$server['title']}\n");
+    else
+      print("{$server['nameport']} {$server['version']} {$server['gameinfo']} {$server['ipaddr']} {$server['title']}\n");
   }
 }
 
 
 function print_lua_list(&$listing)
 {
+  global $version;
+
   header('Content-Type:text/x-lua;charset=utf-8');
   print "return {\n";
   if (isset($listing['token'])) {
     print "token = " . lua_quote($listing['token']) . ",\n";
   }
-  print "fields = { 'version', 'hexcode', 'addr', 'ipaddr', 'title', 'owner' },\n";
-  //print "fields = { 'version', 'hexcode', 'addr', 'ipaddr', 'title', 'owner', 'ownername' },\n";
+  if ($version >= 'BZFS0225')
+    print "fields = { 'version', 'gameinfo', 'nameport', 'title', 'ownername' },\n";
+  else
+    print "fields = { 'version', 'gameinfo', 'nameport', 'ipaddr', 'title', 'ownername' },\n";
   print "servers = {\n";
   foreach ($listing['servers'] as $server) {
-    print "{"
-    . lua_quote($server['version']) . ","     // version
-    . lua_quote($server['gameinfo']) . ","     // hexcode
-    . lua_quote($server['nameport']) . ","     // addr
-    . lua_quote($server['ipaddr']) . ","     // ipaddr
-    . lua_quote($server['title']) . ","     // title
-    //. lua_quote($server['owner']) . ","    // owner
-    . lua_quote($server['ownername']) . "},\n"; // ownername
+    if ($version >= 'BZFS0225')
+      print "{"
+      . lua_quote($server['version']) . ","     // version
+      . lua_quote($server['gameinfo']) . ","     // hexcode
+      . lua_quote($server['nameport']) . ","     // addr
+      . lua_quote($server['title']) . ","     // title
+      . lua_quote($server['ownername']) . "},\n"; // ownername
+    else
+      print "{"
+      . lua_quote($server['version']) . ","     // version
+      . lua_quote($server['gameinfo']) . ","     // hexcode
+      . lua_quote($server['nameport']) . ","     // addr
+      . lua_quote($server['ipaddr']) . ","     // ipaddr
+      . lua_quote($server['title']) . ","     // title
+      . lua_quote($server['ownername']) . "},\n"; // ownername
   }
   print "}\n"; // end the "servers" table
   print "}\n";
@@ -338,36 +355,8 @@ function print_lua_list(&$listing)
 function print_json_list(&$listing)
 {
   header('Content-Type: application/json; charset = utf-8');
-  echo json_encode($listing,JSON_PRETTY_PRINT);
+  print(json_encode($listing,JSON_PRETTY_PRINT) . "\n");
   return;
-  print "{\n";
-  if (isset($listing['token'])) {
-    print "token: " . json_quote($listing['token']) . ",\n";
-  }
-  if (isset($listing['notice'])) {
-    print "notice: " . json_quote($listing['notice']) . ",\n";
-  }
-  print '"fields": ["version","hexcode","addr","ipaddr","title","owner"],' . "\n";
-  //print '"fields": ["version","hexcode","addr","ipaddr","title","owner","ownername"],' . "\n";
-  print '"servers": [';
-  $first = true;
-  foreach ($listing['servers'] as $server) {
-    if ($first) {
-      $first = false;
-    } else {
-      print ",";
-    }
-    print "\n["
-    . json_quote($server['version']) . ","  // version
-    . json_quote($server['gameinfo']) . ","  // hexcode
-    . json_quote($server['nameport']) . ","  // addr
-    . json_quote($server['ipaddr']) . ","  // ipaddr
-    . json_quote($server['title']) . ","  // title
-    //. json_quote($server['owner']) . "," // owner
-    . json_quote($server['ownername']) . "]"; // ownername
-  }
-  print "\n]\n";
-  print "}\n";
 }
 
 function authenticate_player($callsign, $password) {
@@ -436,9 +425,10 @@ function action_list() {
   else {
     $listing['servers'] = $db->getServersForUnregistered($version);
   }
-
-  if ($listformat == "lua" || $listformat == "json") {
-    $listing['fields'] = Array("addr", "version", "hexcode", "ipaddr", "title", "owner", "ownername");
+  foreach($listing['servers'] as &$server) {
+    unset($server['owner']);
+    if ($version >= 'BZFS0225')
+      unset($server['ipaddr']);
   }
 
   switch ($listformat) {
@@ -558,8 +548,31 @@ function action_add() {
   $owner = "";
   $ownerID = "";
 
+  $split = explode(':', $nameport);
+  $servname = $split[0];
+  if (array_key_exists(1, $split))
+    $servport = $split[1];
+  else
+    $servport = 5154;
+
+  # Filter out badly formatted or buggy versions
+  if (!preg_match('/[A-Z]{4}[0-9]{4}/', $version))
+    exit("BADVERSION: $version\n");
+
+  // get ips for servname
+  $srvaddrinfo = socket_addrinfo_lookup($servname,$servport,array('ai_socktype'=>SOCK_STREAM));
+  if ($srvaddrinfo == false)
+    exit("ERROR: cannot resolve $servname\n");
+
+  $serverips = array();
+  foreach($srvaddrinfo as $addrinfo) {
+    $aiaddr = socket_addrinfo_explain($addrinfo)['ai_addr'];
+    $serverips[] = $aiaddr['sin6_addr'] ? $aiaddr['sin6_addr'] : $aiaddr['sin_addr'];
+  }
+  //$serverips = gethostbynamel($servname);
+
   // check the server key (from the bzfs -publickey option)
-  if ( ($version != 'BZFS0026' && $version != 'BZFS1910') || $serverKey)
+  if ( $serverKey || ($version != 'BZFS0026' && $version != 'BZFS1910'))
   {
     $keyinfo = $db->getAuthKeyInfoByKey($serverKey);
     if (!$keyinfo) {
@@ -569,16 +582,13 @@ function action_add() {
 
     $servname = substr($nameport, 0, strrpos($nameport,':'));
     if ($servname != $keyinfo['host']) {
-      echo "ERROR: Server name mismatch for key $servname != " . $keyinfo['host'] . "\n";
-      return;
+      exit("ERROR: Server name mismatch for key $servname != " . $keyinfo['host'] . "\n");
     }
 
     # FIXME: this only looks one IPv4 address
     # server may have zero or more IPv4 ips, and zero or more IPv6 ips.
-    $ip = gethostbyname($keyinfo['host']);
-    if ($ip != $_SERVER['REMOTE_ADDR']) {
-      echo "WARNING: Host mismatch for server authentication key $ip != " . $_SERVER['REMOTE_ADDR'] . "\n";
-      #return;
+    if (!in_array($_SERVER['REMOTE_ADDR'],$serverips)) {
+      print('WARNING: Host mismatch for server key ' . $_SERVER['REMOTE_ADDR'] . ' not in ' . json_encode($serverips) . "\n");
     }
 
     // ok so the key is good, now to check the owner
@@ -588,36 +598,23 @@ function action_add() {
       return;
     }
     $ownerID = $keyinfo['owner'];
+  } elseif (sizeof($serverips) != 1) {
+    // Hostname used to need to resolve to a single IPv4 address
+    print("WARNING: hostname resolves to multiple addresses:".json_encode($serverips)."\n");
   }
 
-  # Filter out badly formatted or buggy versions
-  print "MSG: ADD $nameport $version $gameinfo $title\n";
-  if (!preg_match('/[A-Z]{4}[0-9]{4}/', $version))
-    return;
-
-  $split = explode(':', $nameport);
-  $servname = $split[0];
-  if (array_key_exists(1, $split))
-    $servport = $split[1];
-  else
-    $servport = 5154;
-
-  $serverips = gethostbynamel($servname);
-  // Hostname must resolve to a single IPv4 address
-  if ($serverips === FALSE || sizeof($serverips) != 1) {
-    print("ERROR: Provided hostname does not resolve to a single IPv4 address:".json_encode($serverips)."\n");
-    return;
-  }
-
-  $servip = $serverips[0];
-
-  if ($ownerID == "" && $_SERVER['REMOTE_ADDR'] !== $servip && !$debugNoIpCheck) {
+  if ($ownerID == "" && in_array($_SERVER['REMOTE_ADDR'],$serverips) && !$debugNoIpCheck) {
     debug('Requesting address is ' . $_SERVER['REMOTE_ADDR']
-        . ' while server is at ' . $servip, 1 );
+        . ' while server ips are ' . json_encode($serverips), 1 );
     print('ERROR: Requesting address is ' . $_SERVER['REMOTE_ADDR']
-        . ' while server is at ' . $servip );
+        . ' while server ips are ' . json_encode($serverips) );
     die();
   }
+
+  // no longer used
+  $servip = "127.0.0.1";
+
+  print "MSG: ADD $nameport $version $gameinfo $servip $title\n";
 
   # Test to see whether nameport is valid by attempting to establish a
   # connection to it
@@ -627,7 +624,7 @@ function action_add() {
     print("ERROR: Unable to reach your server. Check your router/firewall and DNS configuration.\n");
     return;
   }
-  # FIXME - should callback and update all stats instead of bzupdate.pl
+  # FIXME - should callback and update stats instead of bzupdate.pl
   fclose ($fp);
 
   $server = $db->getServerByNameport($nameport);
@@ -682,15 +679,13 @@ function action_remove() {
     }
 
     if ($servname != $keyinfo['host']) {
-      echo "ERROR: Server name mismatch for key $servname != " . $keyinfo['host'] . "\n";
-      return;
+      exit("ERROR: Server name mismatch for key $servname != " . $keyinfo['host'] . "\n");
     }
 
     // ok so the key is good, now to check the owner
     $owner = $db->getActiveForumUsernameCleanByUserID($keyinfo['owner']);
     if (!$owner) {
-      print("ERROR: Owner lookup failure\n");
-      return;
+      exit("ERROR: Owner lookup failure\n");
     }
     $ownerID = $keyinfo['owner'];
   }
@@ -772,6 +767,6 @@ debug('End session', 4);
 # mode:php ***
 # tab-width: 8 ***
 # c-basic-offset: 2 ***
-# indent-tabs-mode: t ***
+# indent-tabs-mode: s ***
 # End: ***
 # ex: shiftwidth=2 tabstop=8
