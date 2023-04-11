@@ -103,13 +103,13 @@ case 'LOGIN':
 	}
 
 	// if we got here, the user is good to go; redirect
-	header ("Location: http://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
+	header ("Location: https://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
 
 	break;
 case 'LOGOUT':
 	unset ($_SESSION['bzid']);
 
-	header ("Location: http://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
+	header ("Location: https://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
 
 	break;
 case 'ACTIVATE':
@@ -123,7 +123,7 @@ case 'DEACTIVATE':
 
 	// make sure we have a target
 	if (! $_POST['id']) {
-		header ("Location: http://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
+		header ("Location: https://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
 
 		break;
 	}
@@ -141,7 +141,7 @@ case 'DEACTIVATE':
 		break;
 	}
 
-	header ("Location: http://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
+	header ("Location: https://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
 
 	break;
 case 'NEW':
@@ -192,7 +192,7 @@ case 'UPDATE':
 
 	// make sure we have data
 	if (! $_POST['value']) {
-		header ("Location: http://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
+		header ("Location: https://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
 
 		break;
 	}
@@ -223,7 +223,7 @@ case 'UPDATE':
 		break;
 	}
 
-	header ("Location: http://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
+	header ("Location: https://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
 
 	break;
 case 'DELETE':
@@ -236,7 +236,7 @@ case 'DELETE':
 
 	// make sure we have a target
 	if (! $_POST['id']) {
-		header ("Location: http://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
+		header ("Location: https://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
 
 		break;
 	}
@@ -254,7 +254,7 @@ case 'DELETE':
 		break;
 	}
 
-	header ("Location: http://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
+	header ("Location: https://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
 
 	break;
 default:
@@ -411,8 +411,8 @@ function dumpPageHeader () {
 	<head>
 		<title>BZFlag List Server Administration</title>
 		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-		<link rel="stylesheet" type="text/css" href="http://www.bzflag.org/general.css">
-		<link href="http://www.bzflag.or/favicon.ico" rel="shortcut icon">
+		<link rel="stylesheet" type="text/css" href="https://www.bzflag.org/general.css">
+		<link href="https://www.bzflag.org/favicon.ico" rel="shortcut icon">
 		<style type="text/css">
 			table.listform {
 				border-collapse: collapse;
@@ -436,8 +436,8 @@ function dumpPageHeader () {
 				<td colspan="2">
 					<table border="0" cellpadding="0" cellspacing="0" width="100%">
 						<tr>
-							<td bgcolor="#013571" align="right"><img src="http://www.bzflag.org/images/logo2-1.jpg" alt="logo"></td>
-							<td bgcolor="#818181" align="left"><img src="http://www.bzflag.org/images/logo2-2.jpg" alt=""></td>
+							<td bgcolor="#013571" align="right"><img src="https://www.bzflag.org/images/logo2-1.jpg" alt="logo"></td>
+							<td bgcolor="#818181" align="left"><img src="https://www.bzflag.org/images/logo2-2.jpg" alt=""></td>
 						</tr>
 					</table>
 				</td>
@@ -466,7 +466,7 @@ function dumpPageFooter () {
 					<table width="100%" border="0" cellpadding="2" bgcolor="#FFFFFF">
 						<tr>
 							<td align="right">
-								<span class="copyright">copyright &copy; <a href="http://www.bzflag.org/wiki/CurrentMaintainer">CurrentMaintainer</a> 1993-2008&nbsp;</span>
+								<span class="copyright">copyright &copy; <a href="https://www.bzflag.org/wiki/CurrentMaintainer">CurrentMaintainer</a> 1993-2023&nbsp;</span>
 							</td>
 						</tr>
 					</table>

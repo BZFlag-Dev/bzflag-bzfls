@@ -236,7 +236,7 @@ function testform($message) {
 <body>
   <h1>BZFlag db server</h1>
   ' . $message . '
-  <p>This is the development interface to the <a href="http://BZFlag.org/">BZFlag</a> list server.</p>
+  <p>This is the development interface to the <a href="https://BZFlag.org/">BZFlag</a> list server.</p>
   <form action="" method="POST">
     action:<select name="action">
     <option value="LIST" selected>LIST - list servers</option>
