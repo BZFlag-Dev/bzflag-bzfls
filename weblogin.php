@@ -55,7 +55,7 @@ function dumpPageHeader () {
   <title>BZFlag Weblogin</title>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
   <link rel="stylesheet" href="css/weblogin.css">
-  <link href="/favicon.ico" rel="shortcut icon">
+  <link href="https://www.bzflag.org/favicon.ico" rel="shortcut icon">
 </head>
 <body>
   <div id="container">

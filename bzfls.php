@@ -101,13 +101,11 @@ function debugArray ($a){
   return str_replace (array ("\r", "\n"), array ('<\r>', '<\n>'), join(', ', $arr));
 }
 
-
 // temp debug (menotume 2006-05-22)
 //if (strncasecmp ($_REQUEST['callsign'], "dutch", 5) == 0){
 //  debug ("\n***** GLOBALS:\n");
 //  debug (  print_r ($GLOBALS, true), 1 );
 //}
-
 
 if ($debugLevel > 1){
   if (count ($GLOBALS['_POST']))
@@ -226,12 +224,12 @@ $password = @$_REQUEST['password'];
 # for LIST
 $listformat = vcsoe(@$_REQUEST['listformat']);
 
-
 function testform($message) {
   header('Content-Type: text/html; charset=utf-8');
   print('<html>
 <head>
 <title>BZFlag db server</title>
+<link href="https://www.bzflag.org/favicon.ico" rel="shortcut icon">
 </head>
 <body>
   <h1>BZFlag db server</h1>
@@ -278,18 +276,6 @@ Group1</textarea>
 </html>');
 }
 
-function lua_quote($str)
-{
-  return '"' . addslashes($str) . '"';
-}
-
-
-function json_quote($str)
-{
-  return '"' . addslashes($str) . '"';
-}
-
-
 function print_plain_list(&$listing)
 {
   global $version;
@@ -315,6 +301,10 @@ function print_plain_list(&$listing)
   }
 }
 
+function lua_quote($str)
+{
+  return '"' . addslashes($str) . '"';
+}
 
 function print_lua_list(&$listing)
 {
@@ -351,7 +341,6 @@ function print_lua_list(&$listing)
   print "}\n";
 }
 
-
 function print_json_list(&$listing)
 {
   header('Content-Type: application/json; charset=utf-8');
@@ -383,7 +372,6 @@ function authenticate_player($callsign, $password) {
     return false;
   }
 }
-
 
 function action_list() {
   #  -- LIST --
@@ -437,7 +425,6 @@ function action_list() {
     default:     { print_plain_list($listing); break; }
   }
 }
-
 
 function action_gettoken () {
   global $db, $callsign, $password, $version;
@@ -559,15 +546,13 @@ function action_add() {
   if (!preg_match('/[A-Z]{4}[0-9]{4}/', $version))
     exit("BADVERSION: $version\n");
 
-  // get ips for servname
-  $srvaddrinfo = socket_addrinfo_lookup($servname,$servport,array('ai_socktype'=>SOCK_STREAM));
-  if ($srvaddrinfo == false)
+  $records = dns_get_record($servname, DNS_A|DNS_AAAA);
+  if (sizeof($records) == 0)
     exit("ERROR: cannot resolve $servname\n");
 
   $serverips = array();
-  foreach($srvaddrinfo as $addrinfo) {
-    $aiaddr = socket_addrinfo_explain($addrinfo)['ai_addr'];
-    $serverips[] = $aiaddr['sin6_addr'] ? $aiaddr['sin6_addr'] : $aiaddr['sin_addr'];
+  foreach ($records as $record) {
+    $serverips[] = array_key_exists('ip',$record) ? $record['ip'] : $record['ipv6'];
   }
 
   // check the server key (from the bzfs -publickey option)
@@ -689,14 +674,13 @@ function action_remove() {
   }
 
   // get ips for servname
-  $srvaddrinfo = socket_addrinfo_lookup($servname,$servport,array('ai_socktype'=>SOCK_STREAM));
-  if ($srvaddrinfo == false)
+  $records = dns_get_record($servname, DNS_A|DNS_AAAA);
+  if (sizeof($records) == 0)
     exit("ERROR: cannot resolve $servname\n");
 
   $serverips = array();
-  foreach($srvaddrinfo as $addrinfo) {
-    $aiaddr = socket_addrinfo_explain($addrinfo)['ai_addr'];
-    $serverips[] = $aiaddr['sin6_addr'] ? $aiaddr['sin6_addr'] : $aiaddr['sin_addr'];
+  foreach ($records as $record) {
+    $serverips[] = array_key_exists('ip',$record) ? $record['ip'] : $record['ipv6'];
   }
 
   # server may have zero or more IPv4 IPs, and zero or more IPv6 ips.
@@ -762,7 +746,10 @@ switch ($action) {
   }
   default: {
     # TODO dump the default form here but still close the database connection
-    testform('Unknown command: \'' . $action . '\'');
+    if ($action == '')
+      testform('');
+    else
+      testform('Unknown command: "' . $action . '"');
   }
 }
 
