@@ -12,11 +12,10 @@
 // WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 // Weblogin settings
-$serverName = $_SERVER['SERVER_NAME'];
 $config = Array(
   // Used for checking for cross-site form submission. Should contain the
   // full domain name of the site hosting the weblogin.php script.
-  'ourdomain' => $serverName,
+  'ourdomain' => $_SERVER['SERVER_NAME'],
 );
 
 define('IN_PHPBB', true);
@@ -53,7 +52,7 @@ function dumpPageHeader () {
 "http://www.w3.org/TR/html4/strict.dtd">
 <html>
 <head>
-  <title><?php echo $serverName ?> Login Page</title>
+  <title>BZFlag Weblogin</title>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
   <link rel="stylesheet" href="css/weblogin.css">
   <link href="/favicon.ico" rel="shortcut icon">
@@ -62,7 +61,7 @@ function dumpPageHeader () {
   <div id="container">
     <div id="header">
       <img src="/images/webauth_logo.png" width="184" height="130" alt="">
-      <h1><?php echo $serverName ?> Login</h1>
+      <h1>BZFlag Weblogin</h1>
     </div>
     <div id="main">
 <?php

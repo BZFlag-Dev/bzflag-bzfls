@@ -14,7 +14,7 @@
 
 /* If started from the command line, wrap parameters to $_POST and $_GET */
 // example: SERVER_PORT=443 REMOTE_ADDR=127.0.0.1 php bzfls.php 'action=LISTi&version=BZFS0225'
-if (!isset($_SERVER["HTTP_HOST"])) {
+if (php_sapi_name() === 'cli') {
   parse_str($argv[1], $_REQUEST);
 }
 
@@ -151,7 +151,7 @@ function validate_string_or_error($string, $valid_chars) {
   if ($invalid_chars == true) {
     return($string);
   }
-  header('Content-type: text/html');
+  header('Content-Type: text/html');
   print("ERROR: Invalid chars in \"$string\": \"$invalid_chars\"");
   return('');
 }
@@ -228,7 +228,7 @@ $listformat = vcsoe(@$_REQUEST['listformat']);
 
 
 function testform($message) {
-  header('Content-type: text/html');
+  header('Content-Type: text/html');
   print('<html>
 <head>
 <title>BZFlag db server</title>
@@ -294,7 +294,7 @@ function print_plain_list(&$listing)
 {
   global $version;
 
-  header('Content-Type:text/plain;charset=utf-8');
+  header('Content-Type: text/plain; charset=utf-8');
   if (isset($listing['token'])) {
     if ($listing['token']) {
       print("TOKEN: " . $listing['token'] . "\n");
@@ -305,8 +305,8 @@ function print_plain_list(&$listing)
   if (isset($listing['notice'])) {
     print("NOTICE: " . $listing['notice'] . "\n");
   }
-  if ($_SERVER['SERVER_PORT'] != '443' && (!isset($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] != 'https'))
-    print("outdated.bzflag.org BZFS0221 00000010000100000000000000000000c8c8c800c800c800c800c800c8 127.0.0.1 You are using a very old client. Upgrade to BZFlag 2.4.4 or later.\n");
+  if (empty($_SERVER['HTTPS']) && (!isset($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] != 'https'))
+    print "outdated.bzflag.org BZFS0221 00000010000100000000000000000000c8c8c800c800c800c800c800c8 127.0.0.1 You are using a very old client. Upgrade to BZFlag 2.4.4 or later.\n";
   foreach ($listing['servers'] as $server) {
     if ($version >= 'BZFS0225')
       print("{$server['nameport']} {$server['version']} {$server['gameinfo']} {$server['title']}\n");
@@ -320,7 +320,7 @@ function print_lua_list(&$listing)
 {
   global $version;
 
-  header('Content-Type:text/x-lua;charset=utf-8');
+  header('Content-Type: text/x-lua; charset=utf-8');
   print "return {\n";
   if (isset($listing['token'])) {
     print "token = " . lua_quote($listing['token']) . ",\n";
@@ -354,7 +354,7 @@ function print_lua_list(&$listing)
 
 function print_json_list(&$listing)
 {
-  header('Content-Type: application/json; charset = utf-8');
+  header('Content-Type: application/json; charset=utf-8');
   print(json_encode($listing,JSON_PRETTY_PRINT) . "\n");
   return;
 }
@@ -770,3 +770,4 @@ debug('End session', 4);
 # indent-tabs-mode: s ***
 # End: ***
 # ex: shiftwidth=2 tabstop=8
+
