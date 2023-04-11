@@ -50,7 +50,7 @@ include('banfunctions.php');
 
 debug('Connecting to the database', 3);
 
-$db = new ListDB($dbhost, $dbuname, $dbpass, $dbname);
+$db = new ListDB($dbhost, $dbuname, $dbpass, $dbname, $bbdbname);
 
 # for banning.  provide key => value pairs where the key is an
 # ip address. value is not used at present. these are pulled

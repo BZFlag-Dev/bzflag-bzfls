@@ -1,15 +1,32 @@
 <?php
 
 class ListDB {
+  // Database link
   var $link;
 
-  function __construct($hostname, $username, $password, $database) {
+  // Database prefix for the forum database
+  private $forum_prefix = '';
+
+  function __construct($hostname, $username, $password, $database, $forumdb) {
     $this->link = new mysqli($hostname, $username, $password, $database);
     if ($this->link->connect_error) {
       die('Unable to connect to database');
     }
 
+    if (!empty($forumdb))
+      $this->forum_prefix = $forumdb . '.';
+
     $this->link->query("SET NAMES 'utf8'");
+  }
+
+  // Wrapper for mysqli::prepare that adds the forum prefix
+  private function prepare($sql) {
+    return $this->link->prepare(str_replace('%forum%', $this->forum_prefix, $sql));
+  }
+
+  // Wrapper for mysqli::query that adds the forum prefix
+  private function query($sql) {
+    return $this->link->query(str_replace('%forum%', $this->forum_prefix, $sql));
   }
 
   function getAffectedRows() { return $this->link->affected_rows; }
@@ -30,18 +47,18 @@ class ListDB {
   // Bans
 
   function getActiveBans() {
-    return $this->getAllAssoc($this->link->query('SELECT type, value, owner, reason, silent FROM serverbans WHERE active = 1'));
+    return $this->getAllAssoc($this->query('SELECT type, value, owner, reason, silent FROM serverbans WHERE active = 1'));
   }
 
   function getAllBans() {
-    return $this->getAllAssoc($this->link->query('SELECT * from serverbans'));
+    return $this->getAllAssoc($this->query('SELECT * from serverbans'));
   }
 
   // Server advertisements
 
   function cleanupServerAdvertisements() {
-    $delete = $this->link->prepare('DELETE FROM server_advert_groups WHERE server_id = ?');
-    $result = $this->link->query('SELECT SAV.server_id as server_id from server_advert_groups as SAV LEFT JOIN servers  S ON S.server_id=SAV.server_id WHERE S.server_id is null');
+    $delete = $this->prepare('DELETE FROM server_advert_groups WHERE server_id = ?');
+    $result = $this->query('SELECT SAV.server_id as server_id from server_advert_groups as SAV LEFT JOIN servers  S ON S.server_id=SAV.server_id WHERE S.server_id is null');
     if ($result) {
       while ($row = $result->fetch_assoc()) {
         $delete->bind_param('i', $row['server_id']);
@@ -54,7 +71,7 @@ class ListDB {
   // Servers
 
   function addServer($nameport, $servip, $gameinfo, $title, $ownerID, $owner, $version, $build) {
-    $statement = $this->link->prepare('INSERT INTO servers (nameport, ipaddr, gameinfo, title, owner, ownername, version, build, lastmod) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $statement = $this->prepare('INSERT INTO servers (nameport, ipaddr, gameinfo, title, owner, ownername, version, build, lastmod) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
     if ($statement) {
       $time = time();
       $statement->bind_param('ssssssssi', $nameport, $servip, $gameinfo, $title, $ownerID, $owner, $version, $build, $time);
@@ -63,7 +80,7 @@ class ListDB {
   }
 
   function updateServerByServerID($serverid, $nameport, $servip, $gameinfo, $title, $ownerID, $owner, $version, $build) {
-    $statement = $this->link->prepare('UPDATE servers SET nameport = ?, ipaddr = ?, gameinfo = ?, title = ?, owner = ?, ownername = ?, version = ?, build = ?, lastmod = ? WHERE server_id = ?');
+    $statement = $this->prepare('UPDATE servers SET nameport = ?, ipaddr = ?, gameinfo = ?, title = ?, owner = ?, ownername = ?, version = ?, build = ?, lastmod = ? WHERE server_id = ?');
     if ($statement) {
       $time = time();
       $statement->bind_param('ssssssssii', $nameport, $servip, $gameinfo, $title, $ownerID, $owner, $version, $build, $time, $serverid);
@@ -72,7 +89,7 @@ class ListDB {
   }
 
   function deleteServerByServerID($serverid) {
-    $statement = $this->link->prepare('DELETE FROM servers WHERE server_id = ?');
+    $statement = $this->prepare('DELETE FROM servers WHERE server_id = ?');
     if ($statement) {
       $statement->bind_param('i', $serverid);
       $statement->execute();
@@ -80,7 +97,7 @@ class ListDB {
   }
 
   function deleteStaleServers($staletime) {
-    $statement = $this->link->prepare('DELETE FROM servers WHERE lastmod < ?');
+    $statement = $this->prepare('DELETE FROM servers WHERE lastmod < ?');
     if ($statement) {
       $statement->bind_param('i', $staletime);
       $statement->execute();
@@ -88,7 +105,7 @@ class ListDB {
   }
 
   function getServerByNameport($nameport) {
-    $statement = $this->link->prepare('SELECT * FROM servers WHERE nameport = ?');
+    $statement = $this->prepare('SELECT * FROM servers WHERE nameport = ?');
     if ($statement) {
       $statement->bind_param('s', $nameport);
       $statement->execute();
@@ -107,7 +124,7 @@ class ListDB {
 
 
   function addAdvertGroup($serverid, $groupid) {
-    $statement = $this->link->prepare('INSERT INTO server_advert_groups (server_id, group_id) VALUES (?, ?)');
+    $statement = $this->prepare('INSERT INTO server_advert_groups (server_id, group_id) VALUES (?, ?)');
     if ($statement) {
       $statement->bind_param('ii', $serverid, $groupid);
       $statement->execute();
@@ -115,7 +132,7 @@ class ListDB {
   }
 
   function deleteAdvertGroupByServerID($serverid) {
-    $statement = $this->link->prepare('DELETE FROM server_advert_groups WHERE server_id = ?');
+    $statement = $this->prepare('DELETE FROM server_advert_groups WHERE server_id = ?');
     if ($statement) {
       $statement->bind_param('i', $serverid);
       $statement->execute();
@@ -123,7 +140,7 @@ class ListDB {
   }
 
   function getAuthKeyInfoByKey($authkey) {
-    $statement = $this->link->prepare('SELECT host, owner FROM authkeys WHERE key_string = ?');
+    $statement = $this->prepare('SELECT host, owner FROM authkeys WHERE key_string = ?');
     if ($statement) {
       $statement->bind_param('s', $authkey);
       $statement->execute();
@@ -152,7 +169,7 @@ class ListDB {
   }
 
   function getActiveForumUserByName($name) {
-    $statement = $this->link->prepare('SELECT user_id, user_password, username FROM bzbb3_users WHERE username_clean = ? AND user_inactive_reason = 0');
+    $statement = $this->prepare('SELECT user_id, user_password, username FROM %forum%bzbb3_users WHERE username_clean = ? AND user_inactive_reason = 0');
     if ($statement) {
       $statement->bind_param('s', $name);
       $statement->execute();
@@ -169,7 +186,7 @@ class ListDB {
   }
 
   function getActiveForumUserByUserID($userid) {
-    $statement = $this->link->prepare('SELECT username, username_clean, user_password FROM bzbb3_users WHERE user_id = ? AND user_inactive_reason = 0');
+    $statement = $this->prepare('SELECT username, username_clean, user_password FROM %forum%bzbb3_users WHERE user_id = ? AND user_inactive_reason = 0');
     if ($statement) {
       $statement->bind_param('i', $userid);
       $statement->execute();
@@ -186,7 +203,7 @@ class ListDB {
   }
 
   function getActiveForumUsernameCleanByUserID($userid) {
-    $statement = $this->link->prepare('SELECT username_clean FROM bzbb3_users WHERE user_id = ? AND user_inactive_reason = 0');
+    $statement = $this->prepare('SELECT username_clean FROM %forum%bzbb3_users WHERE user_id = ? AND user_inactive_reason = 0');
     if ($statement) {
       $statement->bind_param('i', $userid);
       $statement->execute();
@@ -203,7 +220,7 @@ class ListDB {
   }
 
   function getGroupMembershipsByUserID($userid) {
-    $statement = $this->link->prepare("SELECT g.group_name FROM bzbb3_groups g, bzbb3_user_group ug WHERE ug.user_id = ? AND ug.group_id = g.group_id AND ug.user_pending = 0 AND NOT (g.group_skip_auth = 1 AND ug.group_leader = 1)");
+    $statement = $this->prepare("SELECT g.group_name FROM %forum%bzbb3_groups g, %forum%bzbb3_user_group ug WHERE ug.user_id = ? AND ug.group_id = g.group_id AND ug.user_pending = 0 AND NOT (g.group_skip_auth = 1 AND ug.group_leader = 1)");
     if ($statement) {
       $statement->bind_param('i', $userid);
       $statement->execute();
@@ -222,7 +239,7 @@ class ListDB {
   }
 
   function validateTokenInformation($callsign, $token, $ip, $staletime, $nameport) {
-    $statement = $this->link->prepare("SELECT user_id FROM bzbb3_users WHERE username_clean = ? AND user_token = ? AND user_tokendate > ? AND ((user_tokenip = ? OR '' = ?) OR (user_tokennameport = ? OR '' = ?))");
+    $statement = $this->prepare("SELECT user_id FROM %forum%bzbb3_users WHERE username_clean = ? AND user_token = ? AND user_tokendate > ? AND ((user_tokenip = ? OR '' = ?) OR (user_tokennameport = ? OR '' = ?))");
     if ($statement) {
       $statement->bind_param('siissss', $callsign, $token, $staletime, $ip, $ip, $nameport, $nameport);
       $statement->execute();
@@ -238,7 +255,7 @@ class ListDB {
   }
 
   function setTokenInformationByUserID($userid, $token, $nameport) {
-    $statement = $this->link->prepare('UPDATE bzbb3_users SET user_token = ?, user_tokendate = ?, user_tokenip = ?, user_tokennameport = ? WHERE user_id = ?');
+    $statement = $this->prepare('UPDATE %forum%bzbb3_users SET user_token = ?, user_tokendate = ?, user_tokenip = ?, user_tokennameport = ? WHERE user_id = ?');
     if ($statement) {
       $time = time();
       $statement->bind_param('iissi', $token, $time, $_SERVER['REMOTE_ADDR'], $nameport, $userid);
@@ -247,7 +264,7 @@ class ListDB {
   }
 
   function clearTokenInformationByUserID($userid) {
-    $statement = $this->link->prepare('UPDATE bzbb3_users SET user_lastvisit = ?, user_tokendate = 0 WHERE user_id = ?');
+    $statement = $this->prepare('UPDATE %forum%bzbb3_users SET user_lastvisit = ?, user_tokendate = 0 WHERE user_id = ?');
     if ($statement) {
       $time = time();
       $statement->bind_param('ii', $time, $userid);
@@ -256,7 +273,7 @@ class ListDB {
   }
 
   function getPrivateMessageCountByUserID($userid) {
-    $statement = $this->link->prepare('SELECT user_new_privmsg FROM bzbb3_users WHERE user_id = ?');
+    $statement = $this->prepare('SELECT user_new_privmsg FROM %forum%bzbb3_users WHERE user_id = ?');
     if ($statement) {
       $statement->bind_param('i', $userid);
       $statement->execute();
@@ -273,7 +290,7 @@ class ListDB {
 
   function getServersForUnregistered($version) {
     if (!$version) $version = '';
-    $statement = $this->link->prepare("SELECT s.nameport, s.version, s.gameinfo, s.ipaddr, s.title, s.owner, s.ownername FROM servers s INNER JOIN server_advert_groups ad ON s.server_id = ad.server_id WHERE ad.group_id = 0 AND (s.version = ? OR '' = ?) ORDER BY nameport ASC");
+    $statement = $this->prepare("SELECT s.nameport, s.version, s.gameinfo, s.ipaddr, s.title, s.owner, s.ownername FROM servers s INNER JOIN server_advert_groups ad ON s.server_id = ad.server_id WHERE ad.group_id = 0 AND (s.version = ? OR '' = ?) ORDER BY nameport ASC");
     if ($statement) {
       $statement->bind_param('ss', $version, $version);
       $statement->execute();
@@ -290,7 +307,7 @@ class ListDB {
 
   function getServersForUserID($user, $version) {
     if (!$version) $version = '';
-    $statement = $this->link->prepare("SELECT s.nameport, s.version, s.gameinfo, s.ipaddr, s.title, s.owner, s.ownername FROM servers s INNER JOIN server_advert_groups ad ON s.server_id = ad.server_id INNER JOIN bzbb3_user_group ug ON ad.group_id = ug.group_id WHERE ug.user_id = ? AND (s.version = ? OR '' = ?) UNION SELECT s.nameport, s.version, s.gameinfo, s.ipaddr, s.title, s.owner, s.ownername FROM servers s INNER JOIN server_advert_groups ad ON s.server_id = ad.server_id WHERE (ad.group_id = 0 OR ad.group_id = 6727) AND (s.version = ? OR '' = ?) ORDER BY nameport ASC");
+    $statement = $this->prepare("SELECT s.nameport, s.version, s.gameinfo, s.ipaddr, s.title, s.owner, s.ownername FROM servers s INNER JOIN server_advert_groups ad ON s.server_id = ad.server_id INNER JOIN %forum%bzbb3_user_group ug ON ad.group_id = ug.group_id WHERE ug.user_id = ? AND (s.version = ? OR '' = ?) UNION SELECT s.nameport, s.version, s.gameinfo, s.ipaddr, s.title, s.owner, s.ownername FROM servers s INNER JOIN server_advert_groups ad ON s.server_id = ad.server_id WHERE (ad.group_id = 0 OR ad.group_id = 6727) AND (s.version = ? OR '' = ?) ORDER BY nameport ASC");
     if ($statement) {
       $statement->bind_param('issss', $user, $version, $version, $version, $version);
       $statement->execute();
@@ -307,7 +324,7 @@ class ListDB {
 
 
   function getGroupIDByGroupName($groupname) {
-    $statement = $this->link->prepare('SELECT group_id FROM bzbb3_groups WHERE group_name = ?');
+    $statement = $this->prepare('SELECT group_id FROM %forum%bzbb3_groups WHERE group_name = ?');
     if ($statement) {
       $statement->bind_param('s', $groupname);
       $statement->execute();
