@@ -151,7 +151,7 @@ function validate_string_or_error($string, $valid_chars) {
   if ($invalid_chars == true) {
     return($string);
   }
-  header('Content-Type: text/html');
+  header('Content-Type: text/html; charset=utf-8');
   print("ERROR: Invalid chars in \"$string\": \"$invalid_chars\"");
   return('');
 }
@@ -228,7 +228,7 @@ $listformat = vcsoe(@$_REQUEST['listformat']);
 
 
 function testform($message) {
-  header('Content-Type: text/html');
+  header('Content-Type: text/html; charset=utf-8');
   print('<html>
 <head>
 <title>BZFlag db server</title>
@@ -406,7 +406,7 @@ function action_list() {
 
     // If not registered or the password is wrong, use an empty token
     if (!$player) {
-      $listing['token'] = ""; // empty token is a bad token
+      $listing['token'] = ''; // empty token is a bad token
       $listing['servers'] = $db->getServersForUnregistered($version);
     } else {
       // Generate a random token
@@ -441,7 +441,7 @@ function action_list() {
 
 function action_gettoken () {
   global $db, $callsign, $password, $version;
-  header('Content-type: text/plain');
+  header('Content-Type: text/plain; charset=utf-8');
   debug('Fetching TOKEN', 2);
 
   if ($callsign && $password) {
@@ -542,11 +542,11 @@ function action_add() {
   # Server either requests to be added to DB, or to issue a keep-alive so that it
   # does not get dropped due to a timeout...
   global $db, $nameport, $version, $build, $gameinfo, $title, $checktokens, $groups, $debugNoIpCheck, $serverKey;
-  header('Content-type: text/plain');
+  header('Content-Type: text/plain; charset=utf-8');
   debug("Attempting to ADD $nameport $version $gameinfo $title", 3);
 
-  $owner = "";
-  $ownerID = "";
+  $owner = '';
+  $ownerID = '';
 
   $split = explode(':', $nameport);
   $servname = $split[0];
@@ -601,7 +601,7 @@ function action_add() {
     print("WARNING: hostname resolves to multiple addresses:".json_encode($serverips)."\n");
   }
 
-  if ($ownerID == "" && in_array($_SERVER['REMOTE_ADDR'],$serverips) && !$debugNoIpCheck) {
+  if ($ownerID == '' && in_array($_SERVER['REMOTE_ADDR'],$serverips) && !$debugNoIpCheck) {
     debug('Requesting address is ' . $_SERVER['REMOTE_ADDR']
         . ' while server ips are ' . json_encode($serverips), 1 );
     print('ERROR: Requesting address is ' . $_SERVER['REMOTE_ADDR']
@@ -653,12 +653,12 @@ function action_remove() {
   #  -- REMOVE --
   # Server requests to be removed from the DB.
   global $db, $nameport, $serverKey, $debugNoIpCheck;
-  header('Content-type: text/plain');
+  header('Content-Type: text/plain; charset=utf-8');
   print("MSG: REMOVE request from $nameport\n");
   debug("REMOVE request from $nameport", 1);
 
-  $owner = "";
-  $ownerID = "";
+  $owner = '';
+  $ownerID = '';
 
   # FIXME: won't work with IPv6
   $split = explode(':', $nameport);
@@ -704,7 +704,7 @@ function action_remove() {
     print('WARNING: Host mismatch for server key ' . $_SERVER['REMOTE_ADDR'] . ' not in ' . json_encode($serverips) . "\n");
   }
 
-  if ($ownerID == "" && in_array($_SERVER['REMOTE_ADDR'],$serverips) && !$debugNoIpCheck) {
+  if ($ownerID == '' && in_array($_SERVER['REMOTE_ADDR'],$serverips) && !$debugNoIpCheck) {
     debug('Requesting address is ' . $_SERVER['REMOTE_ADDR']
         . ' while server ips are ' . json_encode($serverips), 1 );
     print('ERROR: Requesting address is ' . $_SERVER['REMOTE_ADDR']
@@ -735,7 +735,7 @@ if ($values['hostname'][0] == $values['ipaddress'][0])
 # ignore banned servers outright
 if ($ban = IsBanned($values, $banlist)) {
   # reject the connection attempt
-  header('Content-type: text/plain');
+  header('Content-Type: text/plain; charset=utf-8');
   $remote_addr = $_SERVER['REMOTE_ADDR'];
   debug("Connection rejected from $remote_addr", 1);
   if ($ban['silent'])
@@ -756,7 +756,7 @@ switch ($action) {
   case 'ADD':      { action_add();        break; }
   case 'REMOVE':   { action_remove();     break; }
   case 'CHECKTOKENS': {
-    header('Content-type: text/plain');
+    header('Content-Type: text/plain; charset=utf-8');
     action_checktokens();
     break;
   }
