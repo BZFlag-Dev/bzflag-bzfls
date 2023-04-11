@@ -37,8 +37,8 @@ include($phpbb_root_path.'includes/utf/utf_tools.'.$phpEx);
 
 include('listdb.class.php');
 
-# where to send debug printing (might override below)
-$debugLevel= 2;      // set to >2 to see all sql queries (>1 to see GET/POST input args)
+# where to send debug printing (override in serversettings.php)
+$debugLevel= 0;      // set to >2 to see all sql queries (>1 to see GET/POST input args)
 $debugFilename  = '/var/log/bzfls/bzfls.log';
 $debugNoIpCheck = 0;  // for testing ONLY !!!
 
