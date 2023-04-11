@@ -13,7 +13,7 @@
 // WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 /* If started from the command line, wrap parameters to $_POST and $_GET */
-// example: SERVER_PORT=443 REMOTE_ADDR=127.0.0.1 php bzfls.php 'action=LISTi&version=BZFS0225'
+// example: SERVER_PORT=443 REMOTE_ADDR=127.0.0.1 php bzfls.php 'action=LIST&version=BZFS0225'
 if (php_sapi_name() === 'cli') {
   parse_str($argv[1], $_REQUEST);
 }
