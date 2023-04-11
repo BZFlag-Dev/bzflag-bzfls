@@ -131,7 +131,7 @@ case 'DEACTIVATE':
 	// make the update
 	mysqli_select_db ($link, $dbname) or die ("Could not select bzfls database.");
 	$sql = sprintf ('UPDATE serverbans SET active = %u WHERE banid = %u',
-			($_REQUEST['action'] == ACTIVATE ? 1 : 0), $_POST['id']);
+			($_REQUEST['action'] == 'ACTIVATE' ? 1 : 0), $_POST['id']);
 	$result = mysqli_query ($link, $sql);
 	if (! $result) {
 		dumpPageHeader();
@@ -164,12 +164,12 @@ case 'EDIT':
 
 	dumpPageHeader();
 	?>
-<b><?php echo  ($_REQUEST['action'] == "NEW" ? "New" : "Edit")." Ban"; ?></b><br>
+<b><?php echo ($_REQUEST['action'] == "NEW" ? "New" : "Edit")." Ban"; ?></b><br>
 <form method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
 	<input type="hidden" name="action" value="UPDATE">
 	<input type="hidden" name="id" value="<?php echo $_POST['id']; ?>">
 	<table class="listform">
-	  <tr><td>Ban Type:</td><td><select name="type"><option value="ipaddress"<?php if ($data['type'] == 'ipaddress') echo ' selected="selected"'; ?>>IP Address</option><option value="hostname"<?php if ($data['type'] == 'hostname') echo ' selected="selected"'; ?>>Hostname</option></select></td></tr>
+		<tr><td>Ban Type:</td><td><select name="type"><option value="ipaddress"<?php if ($data['type'] == 'ipaddress') echo ' selected="selected"'; ?>>IP Address</option><option value="hostname"<?php if ($data['type'] == 'hostname') echo ' selected="selected"'; ?>>Hostname</option></select></td></tr>
 		<tr><td>IP/Hostname</td><td><input type="text" name="value" value="<?php echo $data['value']; ?>"></td></tr>
 		<tr><td>Owner</td><td><input type="text" name="owner" value="<?php echo $data['owner']; ?>"></td></tr>
 		<tr><td>Reason</td><td><input type="text" name="reason" value="<?php echo $data['reason']; ?>"></td></tr>
@@ -201,7 +201,7 @@ case 'UPDATE':
 	mysqli_select_db ($link, $dbname) or die ("Could not select bzbb database.");
 	if ($_POST['id'])
 		$sql = sprintf ("UPDATE serverbans SET type = '%s', value = '%s', owner = '%s', reason = '%s', lastby = %u WHERE banid = %u",
-        mysqli_real_escape_string ($link, $_POST['type']),
+				mysqli_real_escape_string ($link, $_POST['type']),
 				mysqli_real_escape_string ($link, $_POST['value']),
 				mysqli_real_escape_string ($link, $_POST['owner']),
 				mysqli_real_escape_string ($link, $_POST['reason']),
@@ -209,7 +209,7 @@ case 'UPDATE':
 				$_POST['id']);
 	else
 		$sql = sprintf ("INSERT INTO serverbans SET type = '%s', value = '%s', owner = '%s', reason = '%s', lastby = %u",
-		    mysqli_real_escape_string ($link, $_POST['type']),
+				mysqli_real_escape_string ($link, $_POST['type']),
 				mysqli_real_escape_string ($link, $_POST['value']),
 				mysqli_real_escape_string ($link, $_POST['owner']),
 				mysqli_real_escape_string ($link, $_POST['reason']),
