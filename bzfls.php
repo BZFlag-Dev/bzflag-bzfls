@@ -569,7 +569,6 @@ function action_add() {
     $aiaddr = socket_addrinfo_explain($addrinfo)['ai_addr'];
     $serverips[] = $aiaddr['sin6_addr'] ? $aiaddr['sin6_addr'] : $aiaddr['sin_addr'];
   }
-  //$serverips = gethostbynamel($servname);
 
   // check the server key (from the bzfs -publickey option)
   if ( $serverKey || ($version != 'BZFS0026' && $version != 'BZFS1910'))
@@ -585,8 +584,7 @@ function action_add() {
       exit("ERROR: Server name mismatch for key $servname != " . $keyinfo['host'] . "\n");
     }
 
-    # FIXME: this only looks one IPv4 address
-    # server may have zero or more IPv4 ips, and zero or more IPv6 ips.
+    # server may have zero or more IPv4 IPs, and zero or more IPv6 ips.
     if (!in_array($_SERVER['REMOTE_ADDR'],$serverips)) {
       print('WARNING: Host mismatch for server key ' . $_SERVER['REMOTE_ADDR'] . ' not in ' . json_encode($serverips) . "\n");
     }
@@ -614,7 +612,7 @@ function action_add() {
   // no longer used
   $servip = "127.0.0.1";
 
-  print "MSG: ADD $nameport $version $gameinfo $servip $title\n";
+  print "MSG: ADD $nameport $version $gameinfo $title\n";
 
   # Test to see whether nameport is valid by attempting to establish a
   # connection to it
@@ -690,20 +688,27 @@ function action_remove() {
     $ownerID = $keyinfo['owner'];
   }
 
-  $serverips = gethostbynamel($servname);
-  // Hostname must resolve to a single IPv4 address
-  if ($serverips === FALSE || sizeof($serverips) != 1) {
-    print("ERROR: Provided hostname does not resolve to a single IPv4 address:".json_encode($serverips)."\n");
-    return;
+  // get ips for servname
+  $srvaddrinfo = socket_addrinfo_lookup($servname,$servport,array('ai_socktype'=>SOCK_STREAM));
+  if ($srvaddrinfo == false)
+    exit("ERROR: cannot resolve $servname\n");
+
+  $serverips = array();
+  foreach($srvaddrinfo as $addrinfo) {
+    $aiaddr = socket_addrinfo_explain($addrinfo)['ai_addr'];
+    $serverips[] = $aiaddr['sin6_addr'] ? $aiaddr['sin6_addr'] : $aiaddr['sin_addr'];
   }
 
-  $servip = $serverips[0];
+  # server may have zero or more IPv4 IPs, and zero or more IPv6 ips.
+  if (!in_array($_SERVER['REMOTE_ADDR'],$serverips)) {
+    print('WARNING: Host mismatch for server key ' . $_SERVER['REMOTE_ADDR'] . ' not in ' . json_encode($serverips) . "\n");
+  }
 
-  if ($ownerID == "" && $_SERVER['REMOTE_ADDR'] !== $servip && !$debugNoIpCheck) {
+  if ($ownerID == "" && in_array($_SERVER['REMOTE_ADDR'],$serverips) && !$debugNoIpCheck) {
     debug('Requesting address is ' . $_SERVER['REMOTE_ADDR']
-        . ' while server is at ' . $servip, 1 );
+        . ' while server ips are ' . json_encode($serverips), 1 );
     print('ERROR: Requesting address is ' . $_SERVER['REMOTE_ADDR']
-        . ' while server is at ' . $servip );
+        . ' while server ips are ' . json_encode($serverips) );
     die();
   }
 
@@ -767,7 +772,7 @@ debug('End session', 4);
 # mode:php ***
 # tab-width: 8 ***
 # c-basic-offset: 2 ***
-# indent-tabs-mode: s ***
+# indent-tabs-mode: t ***
 # End: ***
 # ex: shiftwidth=2 tabstop=8
 
