@@ -12,6 +12,9 @@
 // IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
 // WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
+if (php_sapi_name() === 'cli' && $argc > 1) {
+  parse_str($argv[1], $_REQUEST);
+}
 define('IN_PHPBB', true);
 $phpbb_root_path = '../../forums.bzflag.org/htdocs/';
 $phpEx = 'php';
@@ -50,7 +53,7 @@ $link = @mysqli_connect ($dbhost, $dbuname, $dbpass) or die ("Could not connect 
 switch ($_REQUEST['action']) {
 case 'LOGIN':
 	mysqli_select_db ($link, $bbdbname) or die ("Could not select user database.");
-	$sql = sprintf ('SELECT user_id, user_password FROM bzbb3_users WHERE username = "%s"',
+	$sql = sprintf ('SELECT user_id, user_password FROM ' . $bbdbprefix . 'users WHERE username = "%s"',
 			mysqli_real_escape_string ($link, $_POST['username']));
 	$result = mysqli_query ($link, $sql);
 
@@ -83,8 +86,8 @@ case 'LOGIN':
 	$_SESSION['bzid'] = $row['user_id'];
 
 	// check that this user is a list server admin
-	$sql = 'SELECT group_id FROM bzbb3_user_group WHERE user_id = '.$_SESSION['bzid'].' AND group_id = '.
-			'(SELECT group_id FROM bzbb3_groups WHERE group_name = "BZFLS.ADMIN")';
+	$sql = 'SELECT group_id FROM ' . $bbdbprefix . 'user_group WHERE user_id = '.$_SESSION['bzid'].' AND group_id = '.
+			'(SELECT group_id FROM ' . $bbdbprefix . 'groups WHERE group_name = "BZFLS.ADMIN")';
 	$result = mysqli_query ($link, $sql);
 	if (! $result) {
 		dumpPageHeader();
@@ -265,11 +268,11 @@ default:
 
 // functions
 function dumpMainPage() {
-	global $link, $dbname, $bbdbname;
+	global $link, $dbname, $bbdbname, $bbdbprefix;
 
 	dumpPageHeader();
 
-	if (! $_SESSION['bzid']) {
+	if (!$_SESSION || ! $_SESSION['bzid']) {
 		// We're not logged in... print login form
 
 		?>
@@ -292,7 +295,7 @@ This page is the admin interface for the BZFlag list server located at my.bzflag
 
 	// user is logged in... print main admin page, starting with welcome
 	mysqli_select_db ($link, $bbdbname) or die ("Could not select user database.");
-	$sql = 'SELECT username FROM bzbb3_users WHERE user_id = '.$_SESSION['bzid'];
+	$sql = 'SELECT username FROM ' . $bbdbprefix . 'users WHERE user_id = '.$_SESSION['bzid'];
 	$result = mysqli_query ($link, $sql);
 
 	if (! $result) {
@@ -346,7 +349,7 @@ This page is the admin interface for the BZFlag list server located at my.bzflag
 		// convert each 'lastby' bzid to a username
 		mysqli_select_db ($link, $bbdbname) or die ("Could not select user database.");
 		for ($i = 0; $i < count ($bans); ++$i) {
-			$sql = 'SELECT username FROM bzbb3_users WHERE user_id = '.$bans[$i]['lastby'];
+			$sql = 'SELECT username FROM ' . $bbdbprefix . 'users WHERE user_id = '.$bans[$i]['lastby'];
 			$result = mysqli_query ($link, $sql);
 			if ($result && mysqli_num_rows ($result) > 0)
 				$bans[$i]['lastby'] = mysqli_fetch_array ($result)[0];
@@ -478,5 +481,3 @@ function dumpPageFooter () {
 		);
 }
 
-
-?>

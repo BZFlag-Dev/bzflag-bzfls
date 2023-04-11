@@ -243,7 +243,7 @@ function action_webvalidate() {
 
 session_start();
 
-$db = new ListDB($dbhost, $dbuname, $dbpass, $dbname, $bbdbname);
+$db = new ListDB($dbhost, $dbuname, $dbpass, $dbname, $bbdbname, $bbdbprefix);
 
 // start of script
 // figure out what we are doing
