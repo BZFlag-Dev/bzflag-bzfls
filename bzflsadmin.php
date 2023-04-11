@@ -362,7 +362,7 @@ This page is the admin interface for the BZFlag list server located at my.bzflag
 				echo '<td>Hostname</td>';
 			else
 				echo '<td>Unknown</td>';
-				
+
 			echo '<td>'.$ban['value'].'</td>'.
 					'<td>'.$ban['owner'].'</td>'.
 					'<td>'.$ban['reason'].'</td>'.
