@@ -466,7 +466,7 @@ function dumpPageFooter () {
 					<table width="100%" border="0" cellpadding="2" bgcolor="#FFFFFF">
 						<tr>
 							<td align="right">
-								<span class="copyright">copyright &copy; <a href="https://www.bzflag.org/wiki/CurrentMaintainer">CurrentMaintainer</a> 1993-2023&nbsp;</span>
+								<span class="copyright">copyright &copy; 1993-2023 Tim Riker</span>
 							</td>
 						</tr>
 					</table>
