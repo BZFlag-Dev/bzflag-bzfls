@@ -1,0 +1,106 @@
+body {
+  background-color: #222222;
+  color: #000000;
+  margin: 0;
+  padding: 0;
+  font-family: "Helvetica", "Lucida Grande", "Arial", sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+a:link {
+  color: #0000ff;
+  text-decoration: none;
+  font-style: italic;
+}
+
+a:visited {
+  color: #0000ff;
+  text-decoration: none;
+  font-style: italic;
+}
+
+a:active {
+  color: #0000ff;
+  text-decoration: none;
+  font-style: italic;
+}
+
+a:hover {
+  color: #0000ff;
+  text-decoration: underline;
+  font-style: italic;
+}
+
+a.navbar:link {
+  color: #000000;
+  text-decoration: none;
+  font-style: normal;
+  /*font-size: 12px;*/
+}
+
+a.navbar:visited {
+  color: #000000;
+  text-decoration: none;
+  font-style: normal;
+  /*font-size: 12px;*/
+}
+
+a.navbar:active {
+  color: #000000;
+  text-decoration: none;
+  font-style: normal;
+  /*font-size: 12px;*/
+}
+
+a.navbar:hover {
+  color: #000000;
+  text-decoration: underline;
+  font-style: normal;
+  /*font-size: 12px;*/
+}
+
+.content {
+  color: #000000;
+  /*font-size: 12px;*/
+}
+
+/*table {
+  color: #000000;
+  font-size: 12px;
+}*/
+
+.copyright {
+  color: #000000;
+  font-size: 12px;
+}
+
+.sidebar_border {
+	border: #000000; border-style: solid;
+	border-left-width: 1px; border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px;
+}
+
+.menu {
+  line-height: 1.25;
+}
+
+/*
+     FILE ARCHIVED ON 08:55:18 Feb 24, 2012 AND RETRIEVED FROM THE
+     INTERNET ARCHIVE ON 15:02:42 Apr 11, 2023.
+     JAVASCRIPT APPENDED BY WAYBACK MACHINE, COPYRIGHT INTERNET ARCHIVE.
+
+     ALL OTHER CONTENT MAY ALSO BE PROTECTED BY COPYRIGHT (17 U.S.C.
+     SECTION 108(a)(3)).
+*/
+/*
+playback timings (ms):
+  captures_list: 172.074
+  exclusion.robots: 0.072
+  exclusion.robots.policy: 0.063
+  RedisCDXSource: 6.464
+  esindex: 0.008
+  LoadShardBlock: 149.74 (3)
+  PetaboxLoader3.datanode: 169.663 (4)
+  load_resource: 101.521
+  PetaboxLoader3.resolve: 70.571
+*/

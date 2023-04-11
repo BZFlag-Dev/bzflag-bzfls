@@ -410,8 +410,8 @@ function dumpPageHeader () {
 '<HTML>
 	<head>
 		<title>BZFlag List Server Administration</title>
-		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-		<link rel="stylesheet" type="text/css" href="https://www.bzflag.org/general.css">
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<link rel="stylesheet" type="text/css" href="css/general.css">
 		<link href="https://www.bzflag.org/favicon.ico" rel="shortcut icon">
 		<style type="text/css">
 			table.listform {
@@ -436,8 +436,8 @@ function dumpPageHeader () {
 				<td colspan="2">
 					<table border="0" cellpadding="0" cellspacing="0" width="100%">
 						<tr>
-							<td bgcolor="#013571" align="right"><img src="https://www.bzflag.org/images/logo2-1.jpg" alt="logo"></td>
-							<td bgcolor="#818181" align="left"><img src="https://www.bzflag.org/images/logo2-2.jpg" alt=""></td>
+							<td bgcolor="#013571" align="right"><img src="images/logo2-1.jpg" alt="logo"></td>
+							<td bgcolor="#818181" align="left"><img src="images/logo2-2.jpg" alt=""></td>
 						</tr>
 					</table>
 				</td>
