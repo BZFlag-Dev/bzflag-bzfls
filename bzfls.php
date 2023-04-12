@@ -524,6 +524,27 @@ function add_advertList ($serverID){
   }
 }
 
+function parse_nameport($nameport) {
+  if (preg_match('/^\[([a-fA-F0-9:]*)\]:([0-9]*)$/', $nameport, $matches)) {
+    //[ v6]:port
+    $name = $matches[1];
+    $port = $matches[2];
+  } else if (preg_match('/:[a-fA-F0-9:]*:/', $nameport)) {
+    // multiple colons, assume raw v6
+    $name = $nameport;
+    $port = 5154;
+  } else if (preg_match('/^(.*):([0-9]*)$/', $nameport, $matches)) {
+    $name = $matches[1];
+    $port = $matches[2];
+  } else {
+    // raw host default port
+    $host = $nameport;
+    $port = 5154;
+  }
+  echo "INFO: parse_nameport $nameport $name $port\n";
+  return array($name, $port);
+}
+
 function action_add() {
   #  -- ADD --
   # Server either requests to be added to DB, or to issue a keep-alive so that it
@@ -535,13 +556,7 @@ function action_add() {
   $owner = '';
   $ownerID = '';
 
-  $servname = $nameport;
-  $split = explode(':', $nameport);
-  if (array_key_exists(1, $split)) {
-    $servport = array_pop($split);
-    $servname = implode(':',$split);
-  } else
-    $servport = 5154;
+  list($servname, $servport) = parse_nameport($nameport);
 
   # Filter out badly formatted or buggy versions
   if (!preg_match('/[A-Z]{4}[0-9]{4}/', $version))
@@ -568,7 +583,6 @@ function action_add() {
       return;
     }
 
-    $servname = substr($nameport, 0, strrpos($nameport,':'));
     if ($servname != $keyinfo['host']) {
       exit("ERROR: Server name mismatch for key $servname != " . $keyinfo['host'] . "\n");
     }
@@ -605,14 +619,15 @@ function action_add() {
 
   # Test to see whether nameport is valid by attempting to establish a
   # connection to it
-  if (array_key_exists(3, $split)) {
-    // php fsockopen() wants [] around an ipv6 address
-    $servname = "[$servname]";
+  if (preg_match('/:.*:/', $servname)) {
+    // php fsockopen() wants [] around a bare ipv6 address
+    $fp = @fsockopen("tcp://[$servname]", $servport, $errno, $errstring, 5);
+  } else {
+    $fp = @fsockopen("tcp://$servname", $servport, $errno, $errstring, 5);
   }
-  $fp = @fsockopen($servname, $servport, $errno, $errstring, 5);
   if (!$fp) {
     //debug('Unable to connect back to '.$servname.':'.$servport, 1);
-    print("ERROR: Unable to reach your server. Check your router/firewall and DNS configuration.\n");
+    print("ERROR: Unable to reach $servname on port $servport. Check your router/firewall and DNS configuration.\n");
     return;
   }
   # FIXME - should callback and update stats instead of bzupdate.pl
@@ -653,13 +668,7 @@ function action_remove() {
   $owner = '';
   $ownerID = '';
 
-  $servname = $nameport;
-  $split = explode(':', $nameport);
-  if (array_key_exists(1, $split)) {
-    $servport = array_pop($split);
-    $servname = implode(':',$split);
-  } else
-    $servport = 5154;
+  list($servname, $servport) = parse_nameport($nameport);
 
   if ($serverKey)
   {
