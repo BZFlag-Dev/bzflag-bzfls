@@ -535,11 +535,12 @@ function action_add() {
   $owner = '';
   $ownerID = '';
 
+  $servname = $nameport;
   $split = explode(':', $nameport);
-  $servname = $split[0];
-  if (array_key_exists(1, $split))
-    $servport = $split[1];
-  else
+  if (array_key_exists(1, $split)) {
+    $servport = array_pop($split);
+    $servname = implode(':',$split);
+  } else
     $servport = 5154;
 
   # Filter out badly formatted or buggy versions
@@ -554,7 +555,8 @@ function action_add() {
   $serverips = array();
   foreach($srvaddrinfo as $addrinfo) {
     $aiaddr = socket_addrinfo_explain($addrinfo)['ai_addr'];
-    $serverips[] = $aiaddr['sin6_addr'] ? $aiaddr['sin6_addr'] : $aiaddr['sin_addr'];
+    echo "INFO:$servname : $servport : " . json_encode($aiaddr) . "\n";
+    $serverips[] = array_key_exists('sin6_addr', $aiaddr) ? $aiaddr['sin6_addr'] : $aiaddr['sin_addr'];
   }
 
   // check the server key (from the bzfs -publickey option)
@@ -603,6 +605,10 @@ function action_add() {
 
   # Test to see whether nameport is valid by attempting to establish a
   # connection to it
+  if (array_key_exists(3, $split)) {
+    // php fsockopen() wants [] around an ipv6 address
+    $servname = "[$servname]";
+  }
   $fp = @fsockopen($servname, $servport, $errno, $errstring, 5);
   if (!$fp) {
     //debug('Unable to connect back to '.$servname.':'.$servport, 1);
@@ -647,12 +653,12 @@ function action_remove() {
   $owner = '';
   $ownerID = '';
 
-  # FIXME: won't work with IPv6
+  $servname = $nameport;
   $split = explode(':', $nameport);
-  $servname = $split[0];
-  if (array_key_exists(1, $split))
-    $servport = $split[1];
-  else
+  if (array_key_exists(1, $split)) {
+    $servport = array_pop($split);
+    $servname = implode(':',$split);
+  } else
     $servport = 5154;
 
   if ($serverKey)
