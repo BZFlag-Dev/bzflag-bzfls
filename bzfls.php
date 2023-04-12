@@ -13,7 +13,7 @@
 // WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 /* If started from the command line, wrap parameters to $_POST and $_GET */
-// example: SERVER_PORT=443 REMOTE_ADDR=127.0.0.1 php bzfls.php 'action=LIST&version=BZFS0225'
+// example: HTTPS=on REMOTE_ADDR=127.0.0.1 php bzfls.php 'action=LIST&version=BZFS0225'
 if (php_sapi_name() === 'cli') {
   parse_str($argv[1], $_REQUEST);
 }
@@ -546,13 +546,15 @@ function action_add() {
   if (!preg_match('/[A-Z]{4}[0-9]{4}/', $version))
     exit("BADVERSION: $version\n");
 
-  $records = dns_get_record($servname, DNS_A|DNS_AAAA);
-  if (sizeof($records) == 0)
+  // get ips for servname
+  $srvaddrinfo = socket_addrinfo_lookup($servname,$servport,array('ai_socktype'=>SOCK_STREAM));
+  if ($srvaddrinfo == false)
     exit("ERROR: cannot resolve $servname\n");
 
   $serverips = array();
-  foreach ($records as $record) {
-    $serverips[] = array_key_exists('ip',$record) ? $record['ip'] : $record['ipv6'];
+  foreach($srvaddrinfo as $addrinfo) {
+    $aiaddr = socket_addrinfo_explain($addrinfo)['ai_addr'];
+    $serverips[] = $aiaddr['sin6_addr'] ? $aiaddr['sin6_addr'] : $aiaddr['sin_addr'];
   }
 
   // check the server key (from the bzfs -publickey option)
@@ -674,13 +676,14 @@ function action_remove() {
   }
 
   // get ips for servname
-  $records = dns_get_record($servname, DNS_A|DNS_AAAA);
-  if (sizeof($records) == 0)
+  $srvaddrinfo = socket_addrinfo_lookup($servname,$servport,array('ai_socktype'=>SOCK_STREAM));
+  if ($srvaddrinfo == false)
     exit("ERROR: cannot resolve $servname\n");
 
   $serverips = array();
-  foreach ($records as $record) {
-    $serverips[] = array_key_exists('ip',$record) ? $record['ip'] : $record['ipv6'];
+  foreach($srvaddrinfo as $addrinfo) {
+    $aiaddr = socket_addrinfo_explain($addrinfo)['ai_addr'];
+    $serverips[] = $aiaddr['sin6_addr'] ? $aiaddr['sin6_addr'] : $aiaddr['sin_addr'];
   }
 
   # server may have zero or more IPv4 IPs, and zero or more IPv6 ips.
