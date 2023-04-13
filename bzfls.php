@@ -524,7 +524,7 @@ function add_advertList ($serverID){
   }
 }
 
-function parse_nameport($nameport) {
+function parse_nameport($nameport, &$name, &$port) {
   if (preg_match('/^\[([a-fA-F0-9:]*)\]:([0-9]*)$/', $nameport, $matches)) {
     //[ v6]:port
     $name = $matches[1];
@@ -542,7 +542,7 @@ function parse_nameport($nameport) {
     $port = 5154;
   }
   echo "INFO: parse_nameport $nameport $name $port\n";
-  return array($name, $port);
+  return;
 }
 
 function action_add() {
@@ -556,7 +556,7 @@ function action_add() {
   $owner = '';
   $ownerID = '';
 
-  list($servname, $servport) = parse_nameport($nameport);
+  parse_nameport($nameport, $servname, $servport);
 
   # Filter out badly formatted or buggy versions
   if (!preg_match('/[A-Z]{4}[0-9]{4}/', $version))
@@ -668,7 +668,7 @@ function action_remove() {
   $owner = '';
   $ownerID = '';
 
-  list($servname, $servport) = parse_nameport($nameport);
+  parse_nameport($nameport, $servname, $servport);
 
   if ($serverKey)
   {
