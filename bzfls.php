@@ -541,7 +541,7 @@ function parse_nameport($nameport, &$name, &$port) {
     $host = $nameport;
     $port = 5154;
   }
-  echo "INFO: parse_nameport $nameport $name $port\n";
+  #echo "INFO: parse_nameport $nameport $name $port\n";
   return;
 }
 
@@ -570,7 +570,7 @@ function action_add() {
   $serverips = array();
   foreach($srvaddrinfo as $addrinfo) {
     $aiaddr = socket_addrinfo_explain($addrinfo)['ai_addr'];
-    echo "INFO:$servname : $servport : " . json_encode($aiaddr) . "\n";
+    #echo "INFO:$servname : $servport : " . json_encode($aiaddr) . "\n";
     $serverips[] = array_key_exists('sin6_addr', $aiaddr) ? $aiaddr['sin6_addr'] : $aiaddr['sin_addr'];
   }
 
