@@ -13,8 +13,9 @@
 // WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 /* If started from the command line, wrap parameters to $_POST and $_GET */
+// example: HTTPS=on REMOTE_ADDR=127.0.0.1 php bzfls.php 'action=LIST&version=BZFS0225'
 if (php_sapi_name() === 'cli') {
-	parse_str($argv[1], $_REQUEST);
+  parse_str($argv[1], $_REQUEST);
 }
 
 define('IN_PHPBB', true);
@@ -36,8 +37,8 @@ include($phpbb_root_path.'includes/utf/utf_tools.'.$phpEx);
 
 include('listdb.class.php');
 
-# where to send debug printing (might override below)
-$debugLevel= 2;      // set to >2 to see all sql queries (>1 to see GET/POST input args)
+# where to send debug printing (override in serversettings.php)
+$debugLevel= 0;      // set to >2 to see all sql queries (>1 to see GET/POST input args)
 $debugFilename  = '/var/log/bzfls/bzfls.log';
 $debugNoIpCheck = 0;  // for testing ONLY !!!
 
@@ -49,7 +50,7 @@ include('banfunctions.php');
 
 debug('Connecting to the database', 3);
 
-$db = new ListDB($dbhost, $dbuname, $dbpass, $dbname);
+$db = new ListDB($dbhost, $dbuname, $dbpass, $dbname, $bbdbname, $bbdbprefix);
 
 # for banning.  provide key => value pairs where the key is an
 # ip address. value is not used at present. these are pulled
@@ -100,13 +101,11 @@ function debugArray ($a){
   return str_replace (array ("\r", "\n"), array ('<\r>', '<\n>'), join(', ', $arr));
 }
 
-
 // temp debug (menotume 2006-05-22)
 //if (strncasecmp ($_REQUEST['callsign'], "dutch", 5) == 0){
 //  debug ("\n***** GLOBALS:\n");
 //  debug (  print_r ($GLOBALS, true), 1 );
 //}
-
 
 if ($debugLevel > 1){
   if (count ($GLOBALS['_POST']))
@@ -150,7 +149,7 @@ function validate_string_or_error($string, $valid_chars) {
   if ($invalid_chars == true) {
     return($string);
   }
-  header('Content-Type: text/html');
+  header('Content-Type: text/html; charset=utf-8');
   print("ERROR: Invalid chars in \"$string\": \"$invalid_chars\"");
   return('');
 }
@@ -225,17 +224,17 @@ $password = @$_REQUEST['password'];
 # for LIST
 $listformat = vcsoe(@$_REQUEST['listformat']);
 
-
 function testform($message) {
-  header('Content-Type: text/html');
+  header('Content-Type: text/html; charset=utf-8');
   print('<html>
 <head>
 <title>BZFlag db server</title>
+<link href="https://www.bzflag.org/favicon.ico" rel="shortcut icon">
 </head>
 <body>
   <h1>BZFlag db server</h1>
   ' . $message . '
-  <p>This is the development interface to the <a href="http://BZFlag.org/">BZFlag</a> list server AT BZ.</p>
+  <p>This is the development interface to the <a href="https://BZFlag.org/">BZFlag</a> list server.</p>
   <form action="" method="POST">
     action:<select name="action">
     <option value="LIST" selected>LIST - list servers</option>
@@ -254,9 +253,11 @@ function testform($message) {
     version:<input type="text" name="version" size="80"><br>
     callsign:<input type="text" name="callsign" size="80"><br>
     password:<input type="password" name="password" size="80"><br>
-    actions: REMOVE<br>
+    actions: LIST ADD REMOVE<br>
     nameport:<input type="text" name="nameport" size="80"><br>
     actions: ADD REMOVE<br>
+    key:<input type="text" name="key" size="80"><br>
+    actions: ADD<br>
     build:<input type="text" name="build" size="80"><br>
     gameinfo:<input type="text" name="gameinfo" size="80"><br>
     title:<input type="text" name="title" size="80"><br>
@@ -268,8 +269,6 @@ CallSign1=89abcdef</textarea>
     groups:<textarea name="groups" rows="3" style="width:100%">
 Group0
 Group1</textarea>
-    actions: REGISTER CONFIRM<br>
-    email:<input type="text" name="email" size="80"><br>
     <input type="submit" value="Post entry">
     <input type="reset" value="Clear form">
   </form>
@@ -277,22 +276,10 @@ Group1</textarea>
 </html>');
 }
 
-
-
-function lua_quote($str)
-{
-  return '"' . addslashes($str) . '"';
-}
-
-
-function json_quote($str)
-{
-  return '"' . addslashes($str) . '"';
-}
-
-
 function print_plain_list(&$listing)
 {
+  global $version;
+
   header('Content-Type: text/plain; charset=utf-8');
   if (isset($listing['token'])) {
     if ($listing['token']) {
@@ -307,44 +294,62 @@ function print_plain_list(&$listing)
   if (empty($_SERVER['HTTPS']) && (!isset($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] != 'https'))
     echo "outdated.bzflag.org BZFS0221 00000010000100000000000000000000c8c8c800c800c800c800c800c8 127.0.0.1 You are using a very old client. Upgrade to BZFlag 2.4.4 or later.\n";
   foreach ($listing['servers'] as $server) {
-    print("{$server['nameport']} {$server['version']} {$server['gameinfo']} {$server['ipaddr']} {$server['title']}\n");
+    if ($version >= 'BZFS0225')
+      print("{$server['nameport']} {$server['version']} {$server['gameinfo']} {$server['title']}\n");
+    else
+      print("{$server['nameport']} {$server['version']} {$server['gameinfo']} {$server['ipaddr']} {$server['title']}\n");
   }
 }
 
+function lua_quote($str)
+{
+  return '"' . addslashes($str) . '"';
+}
 
 function print_lua_list(&$listing)
 {
+  global $version;
+
   header('Content-Type: text/x-lua; charset=utf-8');
   print "return {\n";
   if (isset($listing['token'])) {
     print "token = " . lua_quote($listing['token']) . ",\n";
   }
-  print "fields = { 'version', 'hexcode', 'addr', 'ipaddr', 'title', 'owner' },\n";
-  //print "fields = { 'version', 'hexcode', 'addr', 'ipaddr', 'title', 'owner', 'ownername' },\n";
+  if ($version >= 'BZFS0225')
+    print "fields = { 'version', 'gameinfo', 'nameport', 'title', 'ownername' },\n";
+  else
+    print "fields = { 'version', 'gameinfo', 'nameport', 'ipaddr', 'title', 'ownername' },\n";
   print "servers = {\n";
   foreach ($listing['servers'] as $server) {
-    print "{"
-    . lua_quote($server['version']) . ","     // version
-    . lua_quote($server['gameinfo']) . ","     // hexcode
-    . lua_quote($server['nameport']) . ","     // addr
-    . lua_quote($server['ipaddr']) . ","     // ipaddr
-    . lua_quote($server['title']) . ","     // title
-    //. lua_quote($server['owner']) . ","    // owner
-    . lua_quote($server['ownername']) . "},\n"; // ownername
+    if ($version >= 'BZFS0225')
+      print "{"
+      . lua_quote($server['version']) . ","     // version
+      . lua_quote($server['gameinfo']) . ","     // hexcode
+      . lua_quote($server['nameport']) . ","     // addr
+      . lua_quote($server['title']) . ","     // title
+      . lua_quote($server['ownername']) . "},\n"; // ownername
+    else
+      print "{"
+      . lua_quote($server['version']) . ","     // version
+      . lua_quote($server['gameinfo']) . ","     // hexcode
+      . lua_quote($server['nameport']) . ","     // addr
+      . lua_quote($server['ipaddr']) . ","     // ipaddr
+      . lua_quote($server['title']) . ","     // title
+      . lua_quote($server['ownername']) . "},\n"; // ownername
   }
   print "}\n"; // end the "servers" table
   print "}\n";
 }
 
-
 function print_json_list(&$listing)
 {
   header('Content-Type: application/json; charset=utf-8');
-  echo json_encode($listing,JSON_PRETTY_PRINT);
+  print(json_encode($listing,JSON_PRETTY_PRINT) . "\n");
+  return;
 }
 
 function authenticate_player($callsign, $password) {
-  global $db;
+  global $db, $nameport;
   // Clean up UTF-8 characters
   $clean_callsign = utf8_clean_string($callsign);
 
@@ -359,7 +364,7 @@ function authenticate_player($callsign, $password) {
     //$player['token'] = bin2hex(random_bytes(16));
     //$player['token'] = base64_encode(random_bytes(14));
     debug ("OK   token={$player['token']}", 2);
-    $db->setTokenInformationByUserID($player['user_id'], $player['token']);
+    $db->setTokenInformationByUserID($player['user_id'], $player['token'], $nameport);
     return $player;
   }
   else {
@@ -367,7 +372,6 @@ function authenticate_player($callsign, $password) {
     return false;
   }
 }
-
 
 function action_list() {
   #  -- LIST --
@@ -390,7 +394,7 @@ function action_list() {
 
     // If not registered or the password is wrong, use an empty token
     if (!$player) {
-      $listing['token'] = ""; // empty token is a bad token
+      $listing['token'] = ''; // empty token is a bad token
       $listing['servers'] = $db->getServersForUnregistered($version);
     } else {
       // Generate a random token
@@ -409,9 +413,10 @@ function action_list() {
   else {
     $listing['servers'] = $db->getServersForUnregistered($version);
   }
-
-  if ($listformat == "lua" || $listformat == "json") {
-    $listing['fields'] = Array("addr", "version", "hexcode", "ipaddr", "title", "owner", "ownername");
+  foreach($listing['servers'] as &$server) {
+    unset($server['owner']);
+    if ($version >= 'BZFS0225')
+      unset($server['ipaddr']);
   }
 
   switch ($listformat) {
@@ -421,10 +426,9 @@ function action_list() {
   }
 }
 
-
 function action_gettoken () {
   global $db, $callsign, $password, $version;
-  header('Content-type: text/plain');
+  header('Content-Type: text/plain; charset=utf-8');
   debug('Fetching TOKEN', 2);
 
   if ($callsign && $password) {
@@ -440,9 +444,9 @@ function action_gettoken () {
 
 function checktoken($callsign, $ip, $token, $garray) {
   # validate player token for connecting player on a game server
-  global $db;
+  global $db, $nameport;
   # TODO add grouplist support
-  print("MSG: checktoken callsign=$callsign, ip=$ip, token=$token ");
+  print("MSG: checktoken callsign=$callsign, token=$token, nameport=$nameport, ip=$ip, ");
   foreach($garray as $group) {
     print(" group=$group");
   }
@@ -458,7 +462,7 @@ function checktoken($callsign, $ip, $token, $garray) {
     return;
   }
 
-  $playerid = $db->validateTokenInformation($clean_callsign, $token, $ip, $staletime);
+  $playerid = $db->validateTokenInformation($clean_callsign, $token, $ip, $staletime, $nameport);
   if ($playerid) {
     # clear tokendate so nasty game server admins can't login someplace else
     $db->clearTokenInformationByUserID($playerid);
@@ -520,19 +524,58 @@ function add_advertList ($serverID){
   }
 }
 
+function parse_nameport($nameport, &$name, &$port) {
+  if (preg_match('/^\[([a-fA-F0-9:]*)\]:([0-9]*)$/', $nameport, $matches)) {
+    //[ v6]:port
+    $name = $matches[1];
+    $port = $matches[2];
+  } else if (preg_match('/:[a-fA-F0-9:]*:/', $nameport)) {
+    // multiple colons, assume raw v6
+    $name = $nameport;
+    $port = 5154;
+  } else if (preg_match('/^(.*):([0-9]*)$/', $nameport, $matches)) {
+    $name = $matches[1];
+    $port = $matches[2];
+  } else {
+    // raw host default port
+    $name = $nameport;
+    $port = 5154;
+  }
+  echo "INFO: parse_nameport $nameport $name $port\n";
+  return;
+}
+
 function action_add() {
   #  -- ADD --
   # Server either requests to be added to DB, or to issue a keep-alive so that it
   # does not get dropped due to a timeout...
   global $db, $nameport, $version, $build, $gameinfo, $title, $checktokens, $groups, $debugNoIpCheck, $serverKey;
-  header('Content-type: text/plain');
+  header('Content-Type: text/plain; charset=utf-8');
   debug("Attempting to ADD $nameport $version $gameinfo $title", 3);
 
-  $owner = "";
-  $ownerID = "";
+  $owner = '';
+  $ownerID = '';
+
+  parse_nameport($nameport, $servname, $servport);
+
+  # Filter out badly formatted or buggy versions
+  if (!preg_match('/[A-Z]{4}[0-9]{4}/', $version))
+    exit("BADVERSION: $version\n");
+
+  // get ips for servname
+  $srvaddrinfo = socket_addrinfo_lookup($servname,$servport,array('ai_socktype'=>SOCK_STREAM));
+  if ($srvaddrinfo == false)
+    exit("ERROR: cannot resolve $servname\n");
+
+  $serverips = array();
+  foreach($srvaddrinfo as $addrinfo) {
+    $aiaddr = socket_addrinfo_explain($addrinfo)['ai_addr'];
+    echo "INFO:$servname : $servport : " . json_encode($aiaddr) . "\n";
+    $serverips[] = array_key_exists('sin6_addr', $aiaddr) ? $aiaddr['sin6_addr'] : $aiaddr['sin_addr'];
+  }
 
   // check the server key (from the bzfs -publickey option)
-  if ( ($version != 'BZFS0026' && $version != 'BZFS1910') || $serverKey)
+  if ( $serverKey || ($version != 'BZFS0026' && $version != 'BZFS1910'))
   {
     $keyinfo = $db->getAuthKeyInfoByKey($serverKey);
     if (!$keyinfo) {
@@ -540,12 +583,13 @@ function action_add() {
       return;
     }
 
-    # FIXME: this only looks one IPv4 address
-    # server may have zero or more IPv4 ips, and zero or more IPv6 ips.
-    $ip = gethostbyname($keyinfo['host']);
-    if ($ip != $_SERVER['REMOTE_ADDR']) {
-      echo "WARNING: Host mismatch for server authentication key $ip != " . $_SERVER['REMOTE_ADDR'] . "\n";
-      #return;
+    if ($servname != $keyinfo['host']) {
+      exit("ERROR: Server name mismatch for key $servname != " . $keyinfo['host'] . "\n");
+    }
+
+    # server may have zero or more IPv4 IPs, and zero or more IPv6 ips.
+    if (!in_array($_SERVER['REMOTE_ADDR'],$serverips)) {
+      print('WARNING: Host mismatch for server key ' . $_SERVER['REMOTE_ADDR'] . ' not in ' . json_encode($serverips) . "\n");
     }
 
     // ok so the key is good, now to check the owner
@@ -555,46 +599,38 @@ function action_add() {
       return;
     }
     $ownerID = $keyinfo['owner'];
+  } elseif (sizeof($serverips) != 1) {
+    // Hostname used to need to resolve to a single IPv4 address
+    print("WARNING: hostname resolves to multiple addresses:".json_encode($serverips)."\n");
   }
 
-  # Filter out badly formatted or buggy versions
-  print "MSG: ADD $nameport $version $gameinfo $title\n";
-  if (!preg_match('/[A-Z]{4}[0-9]{4}/', $version))
-    return;
-
-  $split = explode(':', $nameport);
-  $servname = $split[0];
-  if (array_key_exists(1, $split))
-    $servport = $split[1];
-  else
-    $servport = 5154;
-
-  $serverips = gethostbynamel($servname);
-  // Hostname must resolve to a single IPv4 address
-  if ($serverips === FALSE || sizeof($serverips) != 1) {
-    print("ERROR: Provided hostname does not resolve to a single IPv4 address\n");
-    return;
-  }
-
-  $servip = $serverips[0];
-
-  if ($_SERVER['REMOTE_ADDR'] !== $servip && !$debugNoIpCheck) {
+  if ($ownerID == '' && in_array($_SERVER['REMOTE_ADDR'],$serverips) && !$debugNoIpCheck) {
     debug('Requesting address is ' . $_SERVER['REMOTE_ADDR']
-        . ' while server is at ' . $servip, 1 );
+        . ' while server ips are ' . json_encode($serverips), 1 );
     print('ERROR: Requesting address is ' . $_SERVER['REMOTE_ADDR']
-        . ' while server is at ' . $servip );
+        . ' while server ips are ' . json_encode($serverips) );
     die();
   }
 
+  // no longer used
+  $servip = "127.0.0.1";
+
+  print "MSG: ADD $nameport $version $gameinfo $title\n";
+
   # Test to see whether nameport is valid by attempting to establish a
   # connection to it
-  $fp = @fsockopen($servname, $servport, $errno, $errstring, 5);
+  if (preg_match('/:.*:/', $servname)) {
+    // php fsockopen() wants [] around a bare ipv6 address
+    $fp = @fsockopen("tcp://[$servname]", $servport, $errno, $errstring, 5);
+  } else {
+    $fp = @fsockopen("tcp://$servname", $servport, $errno, $errstring, 5);
+  }
   if (!$fp) {
     //debug('Unable to connect back to '.$servname.':'.$servport, 1);
-    print("ERROR: Unable to reach your server. Check your router/firewall and DNS configuration.\n");
+    print("ERROR: Unable to reach $servname on port $servport. Check your router/firewall and DNS configuration.\n");
     return;
   }
-  # FIXME - should callback and update all stats instead of bzupdate.pl
+  # FIXME - should callback and update stats instead of bzupdate.pl
   fclose ($fp);
 
   $server = $db->getServerByNameport($nameport);
@@ -624,32 +660,57 @@ function action_add() {
 function action_remove() {
   #  -- REMOVE --
   # Server requests to be removed from the DB.
-  global $db, $nameport, $debugNoIpCheck;
-  header('Content-type: text/plain');
+  global $db, $nameport, $serverKey, $debugNoIpCheck;
+  header('Content-Type: text/plain; charset=utf-8');
   print("MSG: REMOVE request from $nameport\n");
   debug("REMOVE request from $nameport", 1);
 
-  $split = explode(':', $nameport);
-  $servname = $split[0];
-  if (array_key_exists(1, $split))
-    $servport = $split[1];
-  else
-    $servport = 5154;
+  $owner = '';
+  $ownerID = '';
 
-  $serverips = gethostbynamel($servname);
-  // Hostname must resolve to a single IPv4 address
-  if ($serverips === FALSE || sizeof($serverips) != 1) {
-    print("ERROR: Provided hostname does not resolve to a single IPv4 address\n");
-    return;
+  parse_nameport($nameport, $servname, $servport);
+
+  if ($serverKey)
+  {
+    $keyinfo = $db->getAuthKeyInfoByKey($serverKey);
+    if (!$keyinfo) {
+      print("ERROR: Missing or invalid server authentication key\n");
+      return;
+    }
+
+    if ($servname != $keyinfo['host']) {
+      exit("ERROR: Server name mismatch for key $servname != " . $keyinfo['host'] . "\n");
+    }
+
+    // ok so the key is good, now to check the owner
+    $owner = $db->getActiveForumUsernameCleanByUserID($keyinfo['owner']);
+    if (!$owner) {
+      exit("ERROR: Owner lookup failure\n");
+    }
+    $ownerID = $keyinfo['owner'];
   }
 
-  $servip = $serverips[0];
+  // get ips for servname
+  $srvaddrinfo = socket_addrinfo_lookup($servname,$servport,array('ai_socktype'=>SOCK_STREAM));
+  if ($srvaddrinfo == false)
+    exit("ERROR: cannot resolve $servname\n");
 
-  if ($_SERVER['REMOTE_ADDR'] !== $servip && !$debugNoIpCheck) {
+  $serverips = array();
+  foreach($srvaddrinfo as $addrinfo) {
+    $aiaddr = socket_addrinfo_explain($addrinfo)['ai_addr'];
+    $serverips[] = $aiaddr['sin6_addr'] ? $aiaddr['sin6_addr'] : $aiaddr['sin_addr'];
+  }
+
+  # server may have zero or more IPv4 IPs, and zero or more IPv6 ips.
+  if (!in_array($_SERVER['REMOTE_ADDR'],$serverips)) {
+    print('WARNING: Host mismatch for server key ' . $_SERVER['REMOTE_ADDR'] . ' not in ' . json_encode($serverips) . "\n");
+  }
+
+  if ($ownerID == '' && in_array($_SERVER['REMOTE_ADDR'],$serverips) && !$debugNoIpCheck) {
     debug('Requesting address is ' . $_SERVER['REMOTE_ADDR']
-        . ' while server is at ' . $servip, 1 );
+        . ' while server ips are ' . json_encode($serverips), 1 );
     print('ERROR: Requesting address is ' . $_SERVER['REMOTE_ADDR']
-        . ' while server is at ' . $servip );
+        . ' while server ips are ' . json_encode($serverips) );
     die();
   }
 
@@ -674,9 +735,9 @@ if ($values['hostname'][0] == $values['ipaddress'][0])
 # TODO: Add a check for the $nameport variable here and add that to $values
 
 # ignore banned servers outright
-if ($ban = IsBanned($values, $banlist, $isSilent)) {
+if ($ban = IsBanned($values, $banlist)) {
   # reject the connection attempt
-  header('Content-type: text/plain');
+  header('Content-Type: text/plain; charset=utf-8');
   $remote_addr = $_SERVER['REMOTE_ADDR'];
   debug("Connection rejected from $remote_addr", 1);
   if ($ban['silent'])
@@ -696,16 +757,17 @@ switch ($action) {
   case 'GETTOKEN': { action_gettoken();   break; }
   case 'ADD':      { action_add();        break; }
   case 'REMOVE':   { action_remove();     break; }
-  case 'REGISTER': { action_register();   break; }
-  case 'CONFIRM':  { action_confirm();    break; }
   case 'CHECKTOKENS': {
-    header('Content-type: text/plain');
+    header('Content-Type: text/plain; charset=utf-8');
     action_checktokens();
     break;
   }
   default: {
     # TODO dump the default form here but still close the database connection
-    testform('Unknown command: \'' . $action . '\'');
+    if ($action == '')
+      testform('');
+    else
+      testform('Unknown command: "' . $action . '"');
   }
 }
 

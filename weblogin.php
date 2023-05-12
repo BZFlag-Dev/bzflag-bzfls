@@ -55,7 +55,7 @@ function dumpPageHeader () {
   <title>BZFlag Weblogin</title>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
   <link rel="stylesheet" href="css/weblogin.css">
-  <link href="/favicon.ico" rel="shortcut icon">
+  <link href="https://www.bzflag.org/favicon.ico" rel="shortcut icon">
 </head>
 <body>
   <div id="container">
@@ -116,7 +116,11 @@ function action_weblogin() {
 
     if ($player && md5($parsedURL['host']).$player['user_password'] === $_COOKIE[$wlk]) {
       $token = random_int(0, 2147483647);
-      $db->setTokenInformationByUserID($uid, $token);
+      $nameport = $parsedURL['host'];
+      if (!empty($parsedURL['port']) {
+        $nameport .= ':'.$parsedURL['port'];
+      }
+      $db->setTokenInformationByUserID($uid, $token, $nameport);
       if (true) {
         header('location: ' . str_replace(Array('%TOKEN%', '%USERNAME%'), Array(urlencode($token), urlencode($player['username'])), $URL));
         return;
@@ -222,7 +226,11 @@ function action_webvalidate() {
       }*/
 
       $token = random_int(0, 2147483647);
-      $db->setTokenInformationByUserID($player['user_id'], $token);
+      $nameport = $refererParts['host'];
+      if (!empty($refererParts['port'])) {
+        $nameport .= ':'.$refererParts['port'];
+      }
+      $db->setTokenInformationByUserID($player['user_id'], $token, $nameport);
       if (true) {
         header('location: ' . str_replace(Array('%TOKEN%', '%USERNAME%'), Array(urlencode($token), urlencode($player['username'])), $URL));
         return;
@@ -235,7 +243,7 @@ function action_webvalidate() {
 
 session_start();
 
-$db = new ListDB($dbhost, $dbuname, $dbpass, $dbname);
+$db = new ListDB($dbhost, $dbuname, $dbpass, $dbname, $bbdbname, $bbdbprefix);
 
 // start of script
 // figure out what we are doing

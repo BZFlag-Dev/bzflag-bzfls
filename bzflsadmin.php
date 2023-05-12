@@ -12,6 +12,9 @@
 // IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
 // WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
+if (php_sapi_name() === 'cli' && $argc > 1) {
+  parse_str($argv[1], $_REQUEST);
+}
 define('IN_PHPBB', true);
 $phpbb_root_path = '../../forums.bzflag.org/htdocs/';
 $phpEx = 'php';
@@ -50,7 +53,7 @@ $link = @mysqli_connect ($dbhost, $dbuname, $dbpass) or die ("Could not connect 
 switch ($_REQUEST['action']) {
 case 'LOGIN':
 	mysqli_select_db ($link, $bbdbname) or die ("Could not select user database.");
-	$sql = sprintf ('SELECT user_id, user_password FROM bzbb3_users WHERE username = "%s"',
+	$sql = sprintf ('SELECT user_id, user_password FROM ' . $bbdbprefix . 'users WHERE username = "%s"',
 			mysqli_real_escape_string ($link, $_POST['username']));
 	$result = mysqli_query ($link, $sql);
 
@@ -83,8 +86,8 @@ case 'LOGIN':
 	$_SESSION['bzid'] = $row['user_id'];
 
 	// check that this user is a list server admin
-	$sql = 'SELECT group_id FROM bzbb3_user_group WHERE user_id = '.$_SESSION['bzid'].' AND group_id = '.
-			'(SELECT group_id FROM bzbb3_groups WHERE group_name = "BZFLS.ADMIN")';
+	$sql = 'SELECT group_id FROM ' . $bbdbprefix . 'user_group WHERE user_id = '.$_SESSION['bzid'].' AND group_id = '.
+			'(SELECT group_id FROM ' . $bbdbprefix . 'groups WHERE group_name = "BZFLS.ADMIN")';
 	$result = mysqli_query ($link, $sql);
 	if (! $result) {
 		dumpPageHeader();
@@ -103,13 +106,13 @@ case 'LOGIN':
 	}
 
 	// if we got here, the user is good to go; redirect
-	header ("Location: http://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
+	header ("Location: https://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
 
 	break;
 case 'LOGOUT':
 	unset ($_SESSION['bzid']);
 
-	header ("Location: http://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
+	header ("Location: https://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
 
 	break;
 case 'ACTIVATE':
@@ -123,7 +126,7 @@ case 'DEACTIVATE':
 
 	// make sure we have a target
 	if (! $_POST['id']) {
-		header ("Location: http://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
+		header ("Location: https://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
 
 		break;
 	}
@@ -131,7 +134,7 @@ case 'DEACTIVATE':
 	// make the update
 	mysqli_select_db ($link, $dbname) or die ("Could not select bzfls database.");
 	$sql = sprintf ('UPDATE serverbans SET active = %u WHERE banid = %u',
-			($_REQUEST['action'] == ACTIVATE ? 1 : 0), $_POST['id']);
+			($_REQUEST['action'] == 'ACTIVATE' ? 1 : 0), $_POST['id']);
 	$result = mysqli_query ($link, $sql);
 	if (! $result) {
 		dumpPageHeader();
@@ -141,7 +144,7 @@ case 'DEACTIVATE':
 		break;
 	}
 
-	header ("Location: http://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
+	header ("Location: https://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
 
 	break;
 case 'NEW':
@@ -164,12 +167,12 @@ case 'EDIT':
 
 	dumpPageHeader();
 	?>
-<b><?php echo  ($_REQUEST['action'] == "NEW" ? "New" : "Edit")." Ban"; ?></b><br>
+<b><?php echo ($_REQUEST['action'] == "NEW" ? "New" : "Edit")." Ban"; ?></b><br>
 <form method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
 	<input type="hidden" name="action" value="UPDATE">
 	<input type="hidden" name="id" value="<?php echo $_POST['id']; ?>">
 	<table class="listform">
-	  <tr><td>Ban Type:</td><td><select name="type"><option value="ipaddress"<?php if ($data['type'] == 'ipaddress') echo ' selected="selected"'; ?>>IP Address</option><option value="hostname"<?php if ($data['type'] == 'hostname') echo ' selected="selected"'; ?>>Hostname</option></select></td></tr>
+		<tr><td>Ban Type:</td><td><select name="type"><option value="ipaddress"<?php if ($data['type'] == 'ipaddress') echo ' selected="selected"'; ?>>IP Address</option><option value="hostname"<?php if ($data['type'] == 'hostname') echo ' selected="selected"'; ?>>Hostname</option></select></td></tr>
 		<tr><td>IP/Hostname</td><td><input type="text" name="value" value="<?php echo $data['value']; ?>"></td></tr>
 		<tr><td>Owner</td><td><input type="text" name="owner" value="<?php echo $data['owner']; ?>"></td></tr>
 		<tr><td>Reason</td><td><input type="text" name="reason" value="<?php echo $data['reason']; ?>"></td></tr>
@@ -192,7 +195,7 @@ case 'UPDATE':
 
 	// make sure we have data
 	if (! $_POST['value']) {
-		header ("Location: http://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
+		header ("Location: https://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
 
 		break;
 	}
@@ -201,7 +204,7 @@ case 'UPDATE':
 	mysqli_select_db ($link, $dbname) or die ("Could not select bzbb database.");
 	if ($_POST['id'])
 		$sql = sprintf ("UPDATE serverbans SET type = '%s', value = '%s', owner = '%s', reason = '%s', lastby = %u WHERE banid = %u",
-        mysqli_real_escape_string ($link, $_POST['type']),
+				mysqli_real_escape_string ($link, $_POST['type']),
 				mysqli_real_escape_string ($link, $_POST['value']),
 				mysqli_real_escape_string ($link, $_POST['owner']),
 				mysqli_real_escape_string ($link, $_POST['reason']),
@@ -209,7 +212,7 @@ case 'UPDATE':
 				$_POST['id']);
 	else
 		$sql = sprintf ("INSERT INTO serverbans SET type = '%s', value = '%s', owner = '%s', reason = '%s', lastby = %u",
-		    mysqli_real_escape_string ($link, $_POST['type']),
+				mysqli_real_escape_string ($link, $_POST['type']),
 				mysqli_real_escape_string ($link, $_POST['value']),
 				mysqli_real_escape_string ($link, $_POST['owner']),
 				mysqli_real_escape_string ($link, $_POST['reason']),
@@ -223,7 +226,7 @@ case 'UPDATE':
 		break;
 	}
 
-	header ("Location: http://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
+	header ("Location: https://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
 
 	break;
 case 'DELETE':
@@ -236,7 +239,7 @@ case 'DELETE':
 
 	// make sure we have a target
 	if (! $_POST['id']) {
-		header ("Location: http://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
+		header ("Location: https://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
 
 		break;
 	}
@@ -254,7 +257,7 @@ case 'DELETE':
 		break;
 	}
 
-	header ("Location: http://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
+	header ("Location: https://".$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF']);
 
 	break;
 default:
@@ -265,11 +268,11 @@ default:
 
 // functions
 function dumpMainPage() {
-	global $link, $dbname, $bbdbname;
+	global $link, $dbname, $bbdbname, $bbdbprefix;
 
 	dumpPageHeader();
 
-	if (! $_SESSION['bzid']) {
+	if (!$_SESSION || ! $_SESSION['bzid']) {
 		// We're not logged in... print login form
 
 		?>
@@ -292,7 +295,7 @@ This page is the admin interface for the BZFlag list server located at my.bzflag
 
 	// user is logged in... print main admin page, starting with welcome
 	mysqli_select_db ($link, $bbdbname) or die ("Could not select user database.");
-	$sql = 'SELECT username FROM bzbb3_users WHERE user_id = '.$_SESSION['bzid'];
+	$sql = 'SELECT username FROM ' . $bbdbprefix . 'users WHERE user_id = '.$_SESSION['bzid'];
 	$result = mysqli_query ($link, $sql);
 
 	if (! $result) {
@@ -346,7 +349,7 @@ This page is the admin interface for the BZFlag list server located at my.bzflag
 		// convert each 'lastby' bzid to a username
 		mysqli_select_db ($link, $bbdbname) or die ("Could not select user database.");
 		for ($i = 0; $i < count ($bans); ++$i) {
-			$sql = 'SELECT username FROM bzbb3_users WHERE user_id = '.$bans[$i]['lastby'];
+			$sql = 'SELECT username FROM ' . $bbdbprefix . 'users WHERE user_id = '.$bans[$i]['lastby'];
 			$result = mysqli_query ($link, $sql);
 			if ($result && mysqli_num_rows ($result) > 0)
 				$bans[$i]['lastby'] = mysqli_fetch_array ($result)[0];
@@ -362,7 +365,7 @@ This page is the admin interface for the BZFlag list server located at my.bzflag
 				echo '<td>Hostname</td>';
 			else
 				echo '<td>Unknown</td>';
-				
+
 			echo '<td>'.$ban['value'].'</td>'.
 					'<td>'.$ban['owner'].'</td>'.
 					'<td>'.$ban['reason'].'</td>'.
@@ -410,9 +413,9 @@ function dumpPageHeader () {
 '<HTML>
 	<head>
 		<title>BZFlag List Server Administration</title>
-		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-		<link rel="stylesheet" type="text/css" href="http://www.bzflag.org/general.css">
-		<link href="http://www.bzflag.or/favicon.ico" rel="shortcut icon">
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<link rel="stylesheet" type="text/css" href="css/general.css">
+		<link href="https://www.bzflag.org/favicon.ico" rel="shortcut icon">
 		<style type="text/css">
 			table.listform {
 				border-collapse: collapse;
@@ -436,8 +439,8 @@ function dumpPageHeader () {
 				<td colspan="2">
 					<table border="0" cellpadding="0" cellspacing="0" width="100%">
 						<tr>
-							<td bgcolor="#013571" align="right"><img src="http://www.bzflag.org/images/logo2-1.jpg" alt="logo"></td>
-							<td bgcolor="#818181" align="left"><img src="http://www.bzflag.org/images/logo2-2.jpg" alt=""></td>
+							<td bgcolor="#013571" align="right"><img src="images/logo2-1.jpg" alt="logo"></td>
+							<td bgcolor="#818181" align="left"><img src="images/logo2-2.jpg" alt=""></td>
 						</tr>
 					</table>
 				</td>
@@ -466,7 +469,7 @@ function dumpPageFooter () {
 					<table width="100%" border="0" cellpadding="2" bgcolor="#FFFFFF">
 						<tr>
 							<td align="right">
-								<span class="copyright">copyright &copy; <a href="http://www.bzflag.org/wiki/CurrentMaintainer">CurrentMaintainer</a> 1993-2008&nbsp;</span>
+								<span class="copyright">copyright &copy; 1993-2023 Tim Riker</span>
 							</td>
 						</tr>
 					</table>
@@ -478,5 +481,3 @@ function dumpPageFooter () {
 		);
 }
 
-
-?>
